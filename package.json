@@ -1,15 +1,16 @@
 {
-  "name": "plugin-sample",
+  "name": "siyuan-plugin-templater",
   "version": "0.4.0",
-  "description": "This is a sample plugin for Siyuan (https://b3log.org/siyuan)",
+  "description": "This is a templater plugin for Siyuan (https://b3log.org/siyuan)",
   "main": ".src/index.js",
   "scripts": {
     "lint": "eslint . --fix --cache",
     "dev": "webpack --mode development",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production",
+    "build:custom": "webpack --mode production --output-path /home/chris/.var/app/org.b3log.siyuan/SiYuan/data/plugins"
   },
   "keywords": [],
-  "author": "Vanessa",
+  "author": "Christian",
   "license": "MIT",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "5.29.0",

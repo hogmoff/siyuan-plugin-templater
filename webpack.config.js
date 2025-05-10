@@ -8,9 +8,11 @@ const ZipPlugin = require("zip-webpack-plugin");
 
 module.exports = (env, argv) => {
     const isPro = argv.mode === "production";
+    // Define your custom output directory here
+    const outputDir = path.resolve(__dirname, "siyuan-plugin-templater");
     const plugins = [
         new MiniCssExtractPlugin({
-            filename: isPro ? "dist/index.css" : "index.css",
+            filename: isPro ? "siyuan-plugin-templater/index.css" : "index.css",
         })
     ];
     let entry = {
@@ -18,7 +20,7 @@ module.exports = (env, argv) => {
     };
     if (isPro) {
         entry = {
-            "dist/index": "./src/index.ts",
+            "./siyuan-plugin-templater/index": "./src/index.ts",
         };
         plugins.push(new webpack.BannerPlugin({
             banner: () => {
@@ -27,21 +29,21 @@ module.exports = (env, argv) => {
         }));
         plugins.push(new CopyPlugin({
             patterns: [
-                {from: "preview.png", to: "./dist/"},
-                {from: "icon.png", to: "./dist/"},
-                {from: "README*.md", to: "./dist/"},
-                {from: "plugin.json", to: "./dist/"},
-                {from: "src/i18n/", to: "./dist/i18n/"},
+                {from: "preview.png", to: "./siyuan-plugin-templater/"},
+                {from: "icon.png", to: "./siyuan-plugin-templater/"},
+                {from: "README*.md", to: "./siyuan-plugin-templater/"},
+                {from: "plugin.json", to: "./siyuan-plugin-templater/"},
+                {from: "src/i18n/", to: "./siyuan-plugin-templater/i18n/"},
             ],
         }));
-        plugins.push(new ZipPlugin({
-            filename: "package.zip",
-            algorithm: "gzip",
-            include: [/dist/],
-            pathMapper: (assetPath) => {
-                return assetPath.replace("dist/", "");
-            },
-        }));
+        // plugins.push(new ZipPlugin({
+        //     filename: "package.zip",
+        //     algorithm: "gzip",
+        //     include: [/dist/],
+        //     pathMapper: (assetPath) => {
+        //         return assetPath.replace("dist/", "");
+        //     },
+        // }));
     } else {
         plugins.push(new CopyPlugin({
             patterns: [
@@ -55,7 +57,7 @@ module.exports = (env, argv) => {
         devtool: isPro ? false : "eval",
         output: {
             filename: "[name].js",
-            path: path.resolve(__dirname),
+            path: outputDir,
             libraryTarget: "commonjs2",
             library: {
                 type: "commonjs2",

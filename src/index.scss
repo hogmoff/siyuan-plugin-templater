@@ -1,22 +1,18 @@
-.plugin-sample {
-  &__custom-tab {
-    background-color: var(--b3-theme-background);
-    height: 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.template-rule {
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  
+  .b3-label {
+    margin-bottom: 4px;
   }
+  
+  .b3-text-field {
+    margin-bottom: 8px;
+  }
+}
 
-  &__custom-dock {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  &__time {
-    background: var(--b3-card-info-background);
-    border-radius: 4px;
-    padding: 2px 8px;
-  }
+.template-rules-container {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
 }

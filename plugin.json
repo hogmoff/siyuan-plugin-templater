@@ -1,8 +1,8 @@
 {
-  "name": "plugin-sample",
-  "author": "Vanessa",
+  "name": "siyuan-plugin-templater",
+  "author": "Christian",
   "url": "https://github.com/siyuan-note/plugin-sample",
-  "version": "0.4.0",
+  "version": "0.1.0",
   "minAppVersion": "3.1.27",
   "backends": [
     "windows",
@@ -21,12 +21,12 @@
     "desktop-window"
   ],
   "displayName": {
-    "default": "Plugin Sample",
-    "zh_CN": "插件示例"
+    "default": "Path-based Templates",
+    "zh_CN": "基于路径的模板"
   },
   "description": {
-    "default": "This is a plugin sample",
-    "zh_CN": "这是一个插件示例"
+    "default": "Automatically inserts specific templates when creating new documents based on their path",
+    "zh_CN": "根据文档路径自动插入特定模板"
   },
   "readme": {
     "default": "README.md",
@@ -36,12 +36,11 @@
     "openCollective": "",
     "patreon": "",
     "github": "",
-    "custom": [
-      "https://ld246.com/sponsor"
-    ]
+    "custom": []
   },
   "keywords": [
-    "sample",
-    "示例"
+    "template",
+    "path",
+    "automation"
   ]
 }
