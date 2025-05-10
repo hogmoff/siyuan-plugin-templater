@@ -5,7 +5,7 @@ import {
     Setting,
 } from "siyuan";
 import "./index.scss";
-import { Templater, TemplateRule } from "./templater";
+import { Templater, TemplateRule, getDocumentPathById } from "./templater";
 
 export default class TemplaterPlugin extends Plugin {
     private templater: Templater;
@@ -30,7 +30,12 @@ export default class TemplaterPlugin extends Plugin {
         });
 
         // Listen for document creation events
-        this.eventBus.on("loaded-protyle-dynamic", this.handleDocumentLoaded.bind(this));
+        //this.eventBus.on("loaded-protyle-dynamic", this.handleDocumentLoaded.bind(this));
+        // Listen for document creation and switching events
+        this.eventBus.on("open-menu-content", this.handleDocumentLoaded.bind(this));
+        this.eventBus.on("switch-protyle", this.handleDocumentLoaded.bind(this));
+
+ 
 
         // Initialize settings
         this.initSettings();
@@ -49,12 +54,27 @@ export default class TemplaterPlugin extends Plugin {
     private async handleDocumentLoaded(event: any) {
         // Check if this is a new document
         const detail = event.detail;
-        if (detail && detail.isNew && detail.protyle && detail.protyle.path) {
+        if (!detail || !detail.protyle || !detail.protyle.path) {
+            return;
+        }
+        
+        // Check if it's a new document by examining the action array
+        const isNew = detail.isNew || (
+            detail.protyle && 
+            detail.protyle.options && 
+            detail.protyle.options.action && 
+            Array.isArray(detail.protyle.options.action) && 
+            detail.protyle.options.action.includes("cb-get-opennew")
+        );
+    
+        if (isNew) {
             const docPath = detail.protyle.path;
+            
             const docId = detail.protyle.block.rootID;
+            const HdocPath = await getDocumentPathById(docId);
             
             // Find matching template
-            const templateId = this.templater.findTemplateForPath(docPath);
+            const templateId = this.templater.findTemplateForPath(HdocPath);
             if (templateId) {
                 // Apply the template
                 const success = await this.templater.applyTemplate(docId, templateId);

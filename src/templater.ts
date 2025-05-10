@@ -1,4 +1,5 @@
-import { fetchPost, fetchSyncPost, IWebSocketData } from "siyuan";
+import { fetchPost } from "siyuan";
+import { getFile, getWorkspaceDir, getHPathByID, renderTemplate, getChildBlocks, insertBlock } from "./api";
 
 // Define the response type for fetchPost
 interface FetchResponse {
@@ -13,24 +14,20 @@ export interface TemplateRule {
     description?: string; // Optional description of the rule
 }
 
-async function request(url: string, data: any) {
-    const response: IWebSocketData = await fetchSyncPost(url, data);
-    const res = response.code === 0 ? response.data : null;
-    return res;
-}
-
-export async function getFile(path: string): Promise<any> {
-    const data = {
-        path: path
-    };
-    const url = "/api/file/getFile";
-    try {
-        const file = await fetchSyncPost(url, data);
-        return file;
-    } catch (error_msg) {
+// Create a function to get the path of a document by its ID using getHPathbyID
+export async function getDocumentPathById(docId: string): Promise<any> {
+    const response = await getHPathByID(docId);
+    if (response && response.data) {
+        const path_name = response.data;
+        // remove string after last '/' in path_name
+        const path = path_name.substring(0, path_name.lastIndexOf("/"));
+        return path;
+    }
+    else {
         return null;
     }
 }
+
 
 export class Templater {
     private rules: TemplateRule[] = [];
@@ -159,20 +156,33 @@ export class Templater {
     }
 
     /**
-    * Apply a template to a document
-    */
+     * Apply a template to a document
+     */
     async applyTemplate(docId: string, templateId: string): Promise<boolean> {
         try {
-            // Add await
-            const response = await fetchPost("/api/template/renderTemplate", {
-                id: docId,
-                path: templateId
-            }) as unknown as FetchResponse;
+
+            // Get first BlockId
+            const firstBlock = await getChildBlocks(docId);
+            if (!firstBlock || !firstBlock.data) {
+                console.error("Failed to get first block:", firstBlock);
+                return false;
+            }
+
+            // First, render the template to get its content
+            const absPath = await getWorkspaceDir() + "/" + templateId;
+            const renderResponse = await renderTemplate(docId, absPath);            
+            if (!renderResponse || !renderResponse.content) {
+                console.error("Failed to render template:", renderResponse);
+                return false;
+            }
             
-            return response && response.code === 0;
+            // Now insert the rendered content into the document before first block
+            const insertResponse = await insertBlock("", "", firstBlock.data[0].id, renderResponse.content);            
+            return insertResponse && insertResponse.code === 0;
         } catch (error) {
             console.error("Failed to apply template:", error);
             return false;
         }
     }
+
 }
