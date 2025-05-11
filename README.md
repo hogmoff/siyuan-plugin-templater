@@ -2,6 +2,8 @@
 
 # SiYuan plugin templater
 
+![Preview](preview.png)
+
 ## Overview
 The Plugin manage handling of template dependend from the created path
 
