@@ -13,7 +13,7 @@ export default class TemplaterPlugin extends Plugin {
     private processedDocuments: Set<string> = new Set();
 
     async onload() {
-        this.templater = new Templater(this.i18n);
+        this.templater = new Templater(this.name, this.i18n);
         
         // Add icon for the plugin
         this.addIcons(`<symbol id="iconTemplater" viewBox="0 0 256.000000 256.000000">
@@ -206,7 +206,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
     }
 
     private openSettings() {
-        this.setting.open("Path-based Templates");
+        this.setting.open(this.i18n.settings);
     }
 
     private openRulesDialog() {

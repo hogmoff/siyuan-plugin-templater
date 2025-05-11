@@ -34,9 +34,11 @@ export async function getDocumentPathById(docId: string): Promise<any> {
 export class Templater {
     private rules: TemplateRule[] = [];
     private i18n;
+    private dataPath = "";
 
-    constructor(i18: IObject) {
+    constructor(pluginId:string, i18: IObject) {
         this.i18n = i18;
+        this.dataPath = `/data/storage/plugins/${pluginId}/rules.json`;
         this.loadRules();
     }
 
@@ -45,7 +47,7 @@ export class Templater {
     */   
     async loadRules(): Promise<void> {
         try {
-        const parsedData = await getFile("/data/plugins/siyuan-plugin-templater/rules.json");
+        const parsedData = await getFile(this.dataPath);
         if (parsedData) {
             try {
                 if (Array.isArray(parsedData)) {
@@ -88,7 +90,7 @@ export class Templater {
             
             // Create FormData and append the file
             const formData = new FormData();
-            formData.append("path", "/data/plugins/siyuan-plugin-templater/rules.json");
+            formData.append("path", this.dataPath);
             formData.append("file", blob, "rules.json");
             
             // Use fetch directly instead of fetchPost for file uploads

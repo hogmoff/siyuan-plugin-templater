@@ -25,6 +25,7 @@ npm run build
 
 ## Usage
 To use the plugin, enable it in the Siyuan settings, then add the rules in Settings. After saving the new rules will be shown in a list. 
+Set the Template path relative to workspace (e.g. data/templates/example.md)
 
 ## Available Languages
 - English

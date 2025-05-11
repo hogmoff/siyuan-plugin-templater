@@ -1,6 +1,6 @@
 {
   "name": "siyuan-plugin-templater",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "This is a templater plugin for Siyuan (https://b3log.org/siyuan)",
   "main": ".src/index.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "release": "webpack --mode production && git tag v$(node -p \"require('./package.json').version\")"
   },
   "keywords": [],
-  "author": "Christian",
+  "author": "hogmoff",
   "license": "MIT",
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "5.29.0",
