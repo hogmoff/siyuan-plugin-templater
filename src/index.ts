@@ -10,6 +10,7 @@ import { Templater, TemplateRule, getDocumentPathById } from "./templater";
 export default class TemplaterPlugin extends Plugin {
     private templater: Templater;
     public setting: Setting;
+    private processedDocuments: Set<string> = new Set();
 
     async onload() {
         this.templater = new Templater();
@@ -29,13 +30,8 @@ export default class TemplaterPlugin extends Plugin {
             }
         });
 
-        // Listen for document creation events
-        //this.eventBus.on("loaded-protyle-dynamic", this.handleDocumentLoaded.bind(this));
-        // Listen for document creation and switching events
-        this.eventBus.on("open-menu-content", this.handleDocumentLoaded.bind(this));
-        this.eventBus.on("switch-protyle", this.handleDocumentLoaded.bind(this));
-
- 
+        // Listen for document creation       
+        this.eventBus.on("switch-protyle", this.handleDocumentLoaded.bind(this)); 
 
         // Initialize settings
         this.initSettings();
@@ -58,8 +54,14 @@ export default class TemplaterPlugin extends Plugin {
             return;
         }
 
-        if (detail.protyle.options.action) {
-            console.log("Action:", detail.protyle.options.action);
+        const docId = detail.protyle.block?.rootID;
+        if (!docId) {
+            return;
+        }
+
+        // Skip if we've already processed this document
+        if (this.processedDocuments.has(docId)) {
+            return;
         }
         
         // Check if it's a new document by examining the action array
@@ -73,12 +75,14 @@ export default class TemplaterPlugin extends Plugin {
     
         if (isNew) {
             const docPath = detail.protyle.path;
-            const docId = detail.protyle.block.rootID;
             const HdocPath = await getDocumentPathById(docId);
             
             // Find matching template
             const templateId = this.templater.findTemplateForPath(HdocPath);
             if (templateId) {
+                // Add to processed list first to prevent double processing
+                this.processedDocuments.add(docId);
+                
                 // Apply the template
                 const success = await this.templater.applyTemplate(docId, templateId);
                 if (success) {
