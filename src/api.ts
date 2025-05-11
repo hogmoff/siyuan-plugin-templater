@@ -164,3 +164,16 @@ export async function insertBlock(parentId: string, previousId: string, nextId: 
         return null;
     }
 }
+
+export async function deleteBlock(blockId: string): Promise<any> {
+    const data = {
+        id: blockId
+    };
+    const url = "/api/block/deleteBlock";
+    try {
+        const file = await fetchSyncPost(url, data);
+        return file;
+    } catch (error_msg) {
+        return null;
+    }
+}

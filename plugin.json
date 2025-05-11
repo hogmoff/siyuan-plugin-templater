@@ -3,7 +3,7 @@
   "author": "Christian",
   "url": "https://github.com/siyuan-note/plugin-sample",
   "version": "0.1.0",
-  "minAppVersion": "3.1.27",
+  "minAppVersion": "3.1.28",
   "backends": [
     "windows",
     "linux",
@@ -21,12 +21,14 @@
     "desktop-window"
   ],
   "displayName": {
-    "default": "Path-based Templates",
-    "zh_CN": "基于路径的模板"
+    "default": "Templater",
+    "zh_CN": "模板器",
+    "de_DE": "Templater"
   },
   "description": {
-    "default": "Automatically inserts specific templates when creating new documents based on their path",
-    "zh_CN": "根据文档路径自动插入特定模板"
+    "default": "Automatically inserts templates when creating new documents based on their path",
+    "zh_CN": "根据新文档的路径，自动插入特定的模板。",
+    "de_DE": "Definierte Vorlagen bei neuen Dokumenten in Abhängigkeit vom Pfad einfügen"
   },
   "readme": {
     "default": "README.md",

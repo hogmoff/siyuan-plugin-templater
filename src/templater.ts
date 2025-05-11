@@ -1,4 +1,4 @@
-import { Dialog, showMessage } from "siyuan";
+import { Dialog, IObject } from "siyuan";
 import { 
     getFile, 
     getWorkspaceDir, 
@@ -7,7 +7,8 @@ import {
     getHPathByID, 
     renderTemplate, 
     getChildBlocks, 
-    insertBlock 
+    insertBlock,
+    deleteBlock
 } from "./api";
 
 export interface TemplateRule {
@@ -32,8 +33,10 @@ export async function getDocumentPathById(docId: string): Promise<any> {
 
 export class Templater {
     private rules: TemplateRule[] = [];
+    private i18n;
 
-    constructor() {
+    constructor(i18: IObject) {
+        this.i18n = i18;
         this.loadRules();
     }
 
@@ -163,12 +166,12 @@ export class Templater {
     private promptForDocumentName(): Promise<string | null> {
         return new Promise((resolve) => {
         const dialog = new Dialog({
-            title: "New Document",
+            title: this.i18n.newDocument,
             content: `<div class="b3-dialog__content">
-            <input class="b3-text-field fn__block" placeholder="Enter document name" id="templater-doc-name">
+            <input class="b3-text-field fn__block" placeholder="${this.i18n.enterDocName}" id="templater-doc-name">
             <div class="b3-dialog__action">
-                <button class="b3-button b3-button--cancel">Cancel</button>
-                <button class="b3-button b3-button--text">Confirm</button>
+                <button class="b3-button b3-button--cancel" style="margin-right: 8px;">${this.i18n.cancel}</button>
+                <button class="b3-button b3-button--text">${this.i18n.confirm}</button>
             </div>
             </div>`,
             width: "400px",
@@ -238,8 +241,20 @@ export class Templater {
             }
             
             // Now insert the rendered content into the document before first block
-            const insertResponse = await insertBlock("", "", firstBlock.data[0].id, renderResponse.content);            
-            return insertResponse && insertResponse.code === 0;
+            const insertResponse = await insertBlock("", firstBlock.data[0].id, "", renderResponse.content);            
+            if (!insertResponse || insertResponse.code !== 0) {
+                console.error("Failed to insert block: ", insertResponse);
+                return false;
+            }
+
+            // delete first block (empty)
+            const deleteResponse =await deleteBlock(firstBlock.data[0].id);
+            if (!deleteResponse || deleteResponse.code !== 0) {
+                console.error("Failed to delete block: ", deleteResponse);
+                return false;
+            }
+            
+            return true;
         } catch (error) {
             console.error("Failed to apply template:", error);
             return false;

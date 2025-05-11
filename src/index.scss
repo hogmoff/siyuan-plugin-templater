@@ -16,3 +16,25 @@
   overflow-y: auto;
   padding-right: 8px;
 }
+
+
+.templater-rules-table {
+  width: 100%;
+  overflow-x: auto;
+  
+  table {
+      width: 100%;
+      border-collapse: collapse;
+  }
+  
+  th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--b3-border-color);
+  }
+  
+  th {
+      background-color: var(--b3-theme-background);
+      font-weight: bold;
+  }
+}
