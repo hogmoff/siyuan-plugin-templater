@@ -1,4 +1,4 @@
-import { fetchSyncPost } from "siyuan";
+import { Plugin, fetchSyncPost } from "siyuan";
 
 // async function request(url: string, data: any) {
 //     const response: IWebSocketData = await fetchSyncPost(url, data);
@@ -6,7 +6,6 @@ import { fetchSyncPost } from "siyuan";
 //     return res;
 // }
 
-// Add this method to your TemplaterPlugin class
 export async function getWorkspaceDir(): Promise<any> {
     const data = {};
     const url = "/api/system/getWorkspaces";
@@ -14,6 +13,55 @@ export async function getWorkspaceDir(): Promise<any> {
         const file = await fetchSyncPost(url, data);
         const d = file.data[0];
         return d.path;
+    } catch (error_msg) {
+        return null;
+    }
+}
+
+/**
+ * Gets the notebook ID for a document using kernel API
+ * @param docId The document ID
+ * @returns The notebook ID or null if not found
+ */
+export async function getNotebookIdByDocId(docId: string): Promise<any> {
+    const data = {
+        stmt: `SELECT box FROM blocks WHERE id = '${docId}' AND type = 'd' LIMIT 1`
+    };
+    const url = "/api/query/sql";
+    try {
+        const file = await fetchSyncPost(url, data);
+        const d = file.data[0];
+        return d.box;
+    } catch (error_msg) {
+        console.error(error_msg);
+        return null;
+    }
+}
+
+export async function renameDoc(notebook: string, path: string, newTitle: string): Promise<any> {
+    const data = {
+        notebook: notebook,
+        path: path,
+        title: newTitle
+    };
+    const url = "/api/filetree/renameDoc";
+    try {
+        const file = await fetchSyncPost(url, data);
+        return file;
+    } catch (error_msg) {
+        return null;
+    }
+}
+
+export async function renameDocbyId(docId: string, newTitle: string): Promise<any> {
+    const data = {
+        id: docId,
+        title: newTitle
+    };
+    const url = "/api/filetree/renameDocByID";
+    try {
+        const file = await fetchSyncPost(url, data);
+        return file;
     } catch (error_msg) {
         return null;
     }

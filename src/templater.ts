@@ -1,12 +1,14 @@
-import { fetchPost } from "siyuan";
-import { getFile, getWorkspaceDir, getHPathByID, renderTemplate, getChildBlocks, insertBlock } from "./api";
-
-// Define the response type for fetchPost
-interface FetchResponse {
-    code: number;
-    data?: any;
-    msg?: string;
-}
+import { Dialog, showMessage } from "siyuan";
+import { 
+    getFile, 
+    getWorkspaceDir, 
+    getNotebookIdByDocId, 
+    renameDocbyId, 
+    getHPathByID, 
+    renderTemplate, 
+    getChildBlocks, 
+    insertBlock 
+} from "./api";
 
 export interface TemplateRule {
     pathPattern: string;  // Regex pattern to match document paths
@@ -27,7 +29,6 @@ export async function getDocumentPathById(docId: string): Promise<any> {
         return null;
     }
 }
-
 
 export class Templater {
     private rules: TemplateRule[] = [];
@@ -155,11 +156,71 @@ export class Templater {
         return null;
     }
 
+    
+    /**
+    * Prompt the user for a document name
+    */
+    private promptForDocumentName(): Promise<string | null> {
+        return new Promise((resolve) => {
+        const dialog = new Dialog({
+            title: "New Document",
+            content: `<div class="b3-dialog__content">
+            <input class="b3-text-field fn__block" placeholder="Enter document name" id="templater-doc-name">
+            <div class="b3-dialog__action">
+                <button class="b3-button b3-button--cancel">Cancel</button>
+                <button class="b3-button b3-button--text">Confirm</button>
+            </div>
+            </div>`,
+            width: "400px",
+            height: "180px"
+        });
+        
+        // Add event listeners for the buttons after dialog is created
+        const confirmButton = dialog.element.querySelector(".b3-button--text");
+        const cancelButton = dialog.element.querySelector(".b3-button--cancel");
+        
+        confirmButton.addEventListener("click", () => {
+            const nameInput = document.getElementById("templater-doc-name") as HTMLInputElement;
+            resolve(nameInput.value.trim());
+            dialog.destroy();
+        });
+        
+        cancelButton.addEventListener("click", () => {
+            resolve(null);
+            dialog.destroy();
+        });
+        
+        // Focus the input field with proper typing
+        const inputElement = dialog.element.querySelector("#templater-doc-name") as HTMLInputElement;
+        if (inputElement) {
+            inputElement.focus();
+        }
+        });
+    }
+
     /**
      * Apply a template to a document
      */
     async applyTemplate(docId: string, templateId: string): Promise<boolean> {
         try {
+
+            // First, prompt for the document name
+            const newName = await this.promptForDocumentName();
+            if (!newName) {
+                // User cancelled the operation
+                return false;
+            }
+
+            // Get NotebookId
+            const notebookId = await getNotebookIdByDocId(docId);
+            console.log(`Notebook ID: ${notebookId}`);
+
+            // Rename the document
+            const responseRename = await renameDocbyId(docId, newName);
+            if (!responseRename) {
+                console.error("Failed to rename document:", responseRename);
+                return false;
+            }
 
             // Get first BlockId
             const firstBlock = await getChildBlocks(docId);

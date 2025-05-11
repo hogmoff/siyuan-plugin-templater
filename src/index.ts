@@ -57,6 +57,10 @@ export default class TemplaterPlugin extends Plugin {
         if (!detail || !detail.protyle || !detail.protyle.path) {
             return;
         }
+
+        if (detail.protyle.options.action) {
+            console.log("Action:", detail.protyle.options.action);
+        }
         
         // Check if it's a new document by examining the action array
         const isNew = detail.isNew || (
@@ -69,7 +73,6 @@ export default class TemplaterPlugin extends Plugin {
     
         if (isNew) {
             const docPath = detail.protyle.path;
-            
             const docId = detail.protyle.block.rootID;
             const HdocPath = await getDocumentPathById(docId);
             
