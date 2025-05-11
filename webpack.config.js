@@ -42,7 +42,7 @@ module.exports = (env, argv) => {
             algorithm: "gzip",
             include: [/siyuan-plugin-templater/],
             pathMapper: (assetPath) => {
-            return assetPath.replace("dist/", "");
+                return assetPath.replace(/dist\/|siyuan-plugin-templater\//g, "");
             },
             path: path.resolve(__dirname)
         }));
