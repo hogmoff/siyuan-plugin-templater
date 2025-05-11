@@ -27,23 +27,25 @@ module.exports = (env, argv) => {
                 return fs.readFileSync("LICENSE").toString();
             },
         }));
+
         plugins.push(new CopyPlugin({
             patterns: [
-                {from: "preview.png", to: "./siyuan-plugin-templater/"},
-                {from: "icon.png", to: "./siyuan-plugin-templater/"},
-                {from: "README*.md", to: "./siyuan-plugin-templater/"},
-                {from: "plugin.json", to: "./siyuan-plugin-templater/"},
-                {from: "src/i18n/", to: "./siyuan-plugin-templater/i18n/"},
+            {from: "preview.png", to: "./siyuan-plugin-templater/"},
+            {from: "icon.png", to: "./siyuan-plugin-templater/"},
+            {from: "README*.md", to: "./siyuan-plugin-templater/"},
+            {from: "plugin.json", to: "./siyuan-plugin-templater/"},
+            {from: "src/i18n/", to: "./siyuan-plugin-templater/i18n/"},
             ],
+        }));        
+        plugins.push(new ZipPlugin({
+            filename: "package.zip",
+            algorithm: "gzip",
+            include: [/siyuan-plugin-templater/],
+            pathMapper: (assetPath) => {
+            return assetPath.replace("dist/", "");
+            },
+            path: path.resolve(__dirname)
         }));
-        // plugins.push(new ZipPlugin({
-        //     filename: "package.zip",
-        //     algorithm: "gzip",
-        //     include: [/dist/],
-        //     pathMapper: (assetPath) => {
-        //         return assetPath.replace("dist/", "");
-        //     },
-        // }));
     } else {
         plugins.push(new CopyPlugin({
             patterns: [

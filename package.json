@@ -1,13 +1,14 @@
 {
   "name": "siyuan-plugin-templater",
-  "version": "0.4.0",
+  "version": "0.1.0",
   "description": "This is a templater plugin for Siyuan (https://b3log.org/siyuan)",
   "main": ".src/index.js",
   "scripts": {
     "lint": "eslint . --fix --cache",
     "dev": "webpack --mode development",
     "build": "webpack --mode production",
-    "build:custom": "webpack --mode production --output-path /home/chris/.var/app/org.b3log.siyuan/SiYuan/data/plugins"
+    "build:custom": "webpack --mode production --output-path /home/chris/.var/app/org.b3log.siyuan/SiYuan/data/plugins",
+    "release": "webpack --mode production && git tag v$(node -p \"require('./package.json').version\")"
   },
   "keywords": [],
   "author": "Christian",
