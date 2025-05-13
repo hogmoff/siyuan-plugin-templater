@@ -1,6 +1,6 @@
 {
   "name": "siyuan-plugin-templater",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "This is a templater plugin for Siyuan (https://b3log.org/siyuan)",
   "main": ".src/index.js",
   "scripts": {
