@@ -1,4 +1,4 @@
-[English](https://github.com/hogmoff/siyuan-plugin-templater/blob/main/README.md
+[English](https://github.com/hogmoff/siyuan-plugin-templater/blob/main/README.md)
 
 # 思源插件模板
 
@@ -7,7 +7,7 @@
 ## 概述
 该插件用于处理创建路径中的模板依赖关系。
 
-## 特点
+## 功能
 - 在设置中管理规则
 - 将依赖于路径的模板作为 regex 应用不同的模板
 - 支持工作区模板文件夹中的任何标记模板
@@ -16,10 +16,10 @@
 要安装插件，请从思源插件市场下载，或克隆源并将其添加到您的思源插件文件夹中。
 
 ### 克隆源并构建
-```` bash
+``` bash
 git clone https://github.com/hogmoff/siyuan-plugin-templater.git
 cd siyuan-plugin-templater
-安装
+npm install
 npm run build
 ```
 
