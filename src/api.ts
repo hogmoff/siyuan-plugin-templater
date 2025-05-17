@@ -1,4 +1,4 @@
-import { Plugin, fetchSyncPost } from "siyuan";
+import { Plugin, fetchPost, fetchSyncPost } from "siyuan";
 
 // async function request(url: string, data: any) {
 //     const response: IWebSocketData = await fetchSyncPost(url, data);
@@ -25,15 +25,29 @@ export async function getWorkspaceDir(): Promise<any> {
  */
 export async function getNotebookIdByDocId(docId: string): Promise<any> {
     const data = {
-        stmt: `SELECT box FROM blocks WHERE id = '${docId}' AND type = 'd' LIMIT 1`
+        stmt: `SELECT box FROM blocks WHERE id = '${docId}' LIMIT 1`
     };
     const url = "/api/query/sql";
     try {
-        const file = await fetchSyncPost(url, data);
-        const d = file.data[0];
-        return d.box;
+        const notebook = await fetchSyncPost(url, data);
+        return notebook.data[0].box;
     } catch (error_msg) {
         console.error(error_msg);
+        return null;
+    }
+}
+
+export async function createDocWithMd(notebook: string, path: string, markDown: string): Promise<any> {
+    const data = {
+        notebook: notebook,
+        path: path,
+        markdown: markDown
+    };
+    const url = "/api/filetree/createDocWithMd";
+    try {
+        const file = await fetchSyncPost(url, data);
+        return file.data;
+    } catch (error_msg) {
         return null;
     }
 }
@@ -59,6 +73,29 @@ export async function renameDocbyId(docId: string, newTitle: string): Promise<an
         title: newTitle
     };
     const url = "/api/filetree/renameDocByID";
+    try {
+        const file = await fetchSyncPost(url, data);
+        return file;
+    } catch (error_msg) {
+        return null;
+    }
+}
+
+export async function moveDocbyId(docId: string, newPath: string, notebookId: string, newPathDocId?: string): Promise<any> {
+    let toPath = null;
+    if (!newPathDocId) {
+        toPath = await getIDsByHPath(notebookId, newPath); 
+    }
+    else {
+        toPath = [newPathDocId];
+    }    
+    if (!toPath || toPath.length == 0) return null;
+
+    const data = {
+        fromIDs: [docId],
+        toID: toPath[0]
+    };
+    const url = "/api/filetree/moveDocsByID";
     try {
         const file = await fetchSyncPost(url, data);
         return file;
@@ -106,6 +143,33 @@ export async function getHPathByID(Id: string): Promise<any> {
     }
 }
 
+export async function getIDsByHPath(notebookId: string, Path: string): Promise<any> {
+    const data = {
+        path: Path,
+        notebook: notebookId
+    };
+    const url = "/api/filetree/getIDsByHPath";
+    try {
+        const fileList = await fetchSyncPost(url, data);
+        return fileList.data;
+    } catch (error_msg) {
+        return null;
+    }
+}
+
+export async function renderSprig(template: string): Promise<any> {
+    const data = {
+        "template": template
+    };
+    const url = "/api/template/renderSprig";
+    try {
+        const sprig = await fetchSyncPost(url, data);
+        return sprig["data"];
+    } catch (error_msg) {
+        return null;
+    }
+}
+
 export async function renderTemplate(Id: string, Path: string): Promise<any> {
     const data = {
         id: Id,
@@ -113,9 +177,7 @@ export async function renderTemplate(Id: string, Path: string): Promise<any> {
     };
     const url = "/api/template/render";
     try {
-        console.log("Rendering template with data:", data);
         const response = await fetchSyncPost(url, data);
-        console.log("Raw response:", response);
         
         if (!response) {
             console.error("Empty response received");
@@ -155,7 +217,6 @@ export async function insertBlock(parentId: string, previousId: string, nextId: 
         previousID: previousId,
         nextID: nextId
     };
-    console.log("Inserting block with data:", data);
     const url = "/api/block/insertBlock";
     try {
         const file = await fetchSyncPost(url, data);

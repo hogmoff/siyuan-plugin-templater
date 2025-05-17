@@ -11,6 +11,7 @@ The Plugin manage handling of template dependend from the created path
 - Manage rules in Settings
 - Dependend from the path as regex apply a different template
 - Support any markdown-template in the template folder of the workspace
+- Move file to specific folder (support date format template variables, such as /Meeting/{{now | date "2006/01"}}/{{now | date "2006-01-02"}})
 
 ## Installation
 To install the plugin, download it from the Siyuan plugin marketplace or clone the repository and add it to your Siyuan plugins folder.
@@ -25,7 +26,16 @@ npm run build
 
 ## Usage
 To use the plugin, enable it in the Siyuan settings, then add the rules in Settings. After saving the new rules will be shown in a list. 
+
+### Template Path
 Set the Template path relative to workspace (e.g. data/templates/example.md)
+
+### Save Path
+Set the Save Path if you need a specific target location for the rendered template. 
+If field is empty then document will be created on current path and ask for document name. Save Path support date format template variables from daily notes. Not existing paths are created.
+
+#### Example
+> "/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-01"}} creates a new document in folder "/Meeting/20xx/xx/" with name "Meeting 20xx-xx-xx" (today date) 
 
 ## Available Languages
 - English

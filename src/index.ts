@@ -79,13 +79,13 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         if (!detail || !detail.protyle || !detail.protyle.path) {
             return;
         }
-
+    
         // Get Document ID
         const docId = detail.protyle.block?.rootID;
         if (!docId) {
             return;
         }
-
+    
         // Skip if we've already processed this document
         if (this.processedDocuments.has(docId)) {
             return;
@@ -99,19 +99,24 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             Array.isArray(detail.protyle.options.action) && 
             detail.protyle.options.action.includes("cb-get-opennew")
         );
-    
+        
         if (isNew) {
             const docPath = detail.protyle.path;
             const HdocPath = await getDocumentPathById(docId);
             
             // Find matching template
-            const templateId = this.templater.findTemplateForPath(HdocPath);
-            if (templateId) {
+            const matchedRule = this.templater.findTemplateForPath(HdocPath);
+            if (matchedRule) {
                 // Add to processed list first to prevent double processing
                 this.processedDocuments.add(docId);
-
-                // Apply the template
-                const success = await this.templater.applyTemplate(docId, templateId);
+    
+                // Apply the template with destination path if specified
+                const success = await this.templater.applyTemplate(
+                    docId, 
+                    matchedRule.templateId, 
+                    matchedRule.destinationPath
+                );
+                
                 if (success) {
                     showMessage(this.i18n.templateApplied + `${docPath}`, 3000, "info");
                 } else {
@@ -185,6 +190,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                 <th>${this.i18n.description}</th>
                 <th>${this.i18n.pathPattern}</th>
                 <th>${this.i18n.template}</th>
+                <th>${this.i18n.destinationPath || "Destination Path"}</th>
             </tr>
         `;
         table.appendChild(thead);
@@ -194,9 +200,10 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         rules.forEach(rule => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td>${rule.description}</td>
+                <td>${rule.description || ""}</td>
                 <td>${rule.pathPattern}</td>
                 <td>${rule.templateId}</td>
+                <td>${rule.destinationPath || ""}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -214,6 +221,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         
         let rulesHTML = "";
         rules.forEach((rule, index) => {
+            const escapedDestinationPath = (rule.destinationPath || "").replace(/"/g, "&quot;");
             rulesHTML += `
             <div class="template-rule" data-index="${index}">
                 <div class="fn__flex">
@@ -227,15 +235,19 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                         <input class="b3-text-field fn__block template-id" value="${rule.templateId}">
                     </div>
                 </div>
-                <div class="fn__flex">
+                <div class="fn__flex" style="align-items: flex-end;">                    
                     <div class="fn__flex-1">
                         <div class="b3-label">${this.i18n.description}</div>
                         <input class="b3-text-field fn__block description" value="${rule.description || ""}">
                     </div>
                     <div class="fn__space"></div>
-                    <div class="fn__flex-center" style="align-self: flex-end;">
-                        <button class="b3-button b3-button--outline remove-rule">${this.i18n.remove}</button>
+                    <div class="fn__flex-1">
+                        <div class="b3-label">${this.i18n.destinationPath}</div>
+                        <input class="b3-text-field fn__block destination-path" value="${escapedDestinationPath}">
                     </div>
+                </div>
+                <div class="fn__flex-center" style="align-self: flex-end;">
+                    <button class="b3-button b3-button--outline remove-rule">${this.i18n.remove}</button>
                 </div>
                 <div class="fn__hr"></div>
             </div>`;
@@ -286,6 +298,13 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                         <input class="b3-text-field fn__block description" value="">
                     </div>
                     <div class="fn__space"></div>
+                    <div class="fn__flex-1">
+                        <div class="b3-label">${this.i18n.destinationPath || "Destination Path"}</div>
+                        <input class="b3-text-field fn__block destination-path" value="">
+                    </div>
+                </div>
+                <div class="fn__flex">
+                    <div class="fn__flex-1"></div>
                     <div class="fn__flex-center" style="align-self: flex-end;">
                         <button class="b3-button b3-button--outline remove-rule">${this.i18n.remove}</button>
                     </div>
@@ -321,16 +340,18 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                 const pathPattern = (el.querySelector(".path-pattern") as HTMLInputElement).value;
                 const templateId = (el.querySelector(".template-id") as HTMLInputElement).value;
                 const description = (el.querySelector(".description") as HTMLInputElement).value;
+                const destinationPath = (el.querySelector(".destination-path") as HTMLInputElement).value;
                 
                 if (pathPattern && templateId) {
                     newRules.push({
                         pathPattern,
                         templateId,
-                        description: description || undefined
+                        description: description || undefined,
+                        destinationPath: destinationPath || undefined
                     });
                 }
             });
-                        
+            
             // Update rules
             this.templater["rules"] = newRules;
             await this.templater.saveRules();
