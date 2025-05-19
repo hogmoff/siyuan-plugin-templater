@@ -6,21 +6,16 @@ import {
 } from "siyuan";
 import "./index.scss";
 import { Templater, TemplateRule, getDocumentPathById, DEFAULT_ICON } from "./templater";
-import { getFile } from "./api";
 
 export default class TemplaterPlugin extends Plugin {
     private templater: Templater;
     public setting: Setting;
     private processedDocuments: Set<string> = new Set();
-    private emojis: string[] = [];
     private pluginPath: string;
 
     async onload() {
         this.templater = new Templater(this.name, this.i18n);
         this.pluginPath = `/data/plugins/${this.name}`;
-
-        // Load emojis from file
-        await this.loadEmojis();
         
         // Add icon for the plugin
         this.addIcons(`<symbol id="iconTemplater" viewBox="0 0 256.000000 256.000000">
@@ -79,25 +74,6 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
     onunload() {
         console.log("Templater plugin unloaded");
     }
-
-    // Load emojis from file    
-    private async loadEmojis() {
-        try {
-            const emojiFilePath = `${this.pluginPath}/emojis.json`;            
-            const response = await getFile(emojiFilePath);   
-            if (response) {
-                this.emojis = response;
-                console.log(`Loaded ${this.emojis.length} emojis from file`);
-            }
-            else {
-                throw new Error("Failed to load emoji file");
-            }
-        } catch (error) {
-            console.error("Error loading emojis:", error);
-            this.emojis = [];
-        }
-    }
-
 
     private async handleDocumentLoaded(event: any) {
         // Check if this is a new document
@@ -279,12 +255,12 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                     </div>
                     <div class="fn__space"></div>
                     <div class="fn__flex-0">
-                        <div class="b3-label">${this.i18n.icon || "Icon"}</div>
+                    <div class="b3-label">${this.i18n.icon || "Icon"}</div>
                         <div class="fn__flex">
                             <button class="b3-button b3-button--outline emoji-picker-btn" 
-                                    data-icon="${iconValue}" 
-                                    style="min-width: 60px; padding: 0 8px;">
-                                ${iconValue}
+                            data-icon="${iconValue}" 
+                            style="min-width: 60px; padding: 0 8px; height: 32px; line-height: 32px;">
+                            ${iconValue}
                             </button>
                             <input type="hidden" class="icon" value="${rule.icon || DEFAULT_ICON}">
                         </div>
@@ -323,7 +299,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             width: "800px",
         });
 
-        // Add event listeners for emoji picker buttons AFTER dialog is created
+        // Add event listeners for emoji picker buttons
         const emojiButtons = dialog.element.querySelectorAll(".emoji-picker-btn");
         emojiButtons.forEach(btn => {
             btn.addEventListener("click", (e) => {
@@ -363,12 +339,12 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                     </div>
                     <div class="fn__space"></div>
                     <div class="fn__flex-0">
-                    <div class="b3-label">${this.i18n.icon || "Icon"}</div>
-                    <div class="fn__flex">
-                    <button class="b3-button b3-button--outline emoji-picker-btn" data-icon="${DEFAULT_ICON}" style="min-width: 60px; padding: 0 8px;">${DEFAULT_ICON}</button>
-                    <input type="hidden" class="icon" value="${DEFAULT_ICON}">
-                    </div>
-                    </div>
+                        <div class="b3-label">${this.i18n.icon || "Icon"}</div>
+                            <div class="fn__flex">
+                                <button class="b3-button b3-button--outline emoji-picker-btn" data-icon="${DEFAULT_ICON}" style="min-width: 60px; padding: 0 8px; height: 32px; line-height: 32px;">${DEFAULT_ICON}</button>
+                                <input type="hidden" class="icon" value="${DEFAULT_ICON}">
+                            </div>
+                        </div>
                     </div>
                     <div class="fn__flex" style="margin-top: 8px;">
                     <div class="fn__flex-1"></div>
@@ -447,54 +423,150 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
     }
     
     private showEmojiPicker(buttonElement: HTMLElement) {
-        // Find the associated input field
         const ruleElement = buttonElement.closest(".template-rule");
+        if (!ruleElement) return; // Should not happen
         const iconInput = ruleElement.querySelector(".icon") as HTMLInputElement;
-        
-        // Calculate position for the emoji panel (below the button)
-        const rect = buttonElement.getBoundingClientRect();
 
-        
-        // Create a custom dialog for emoji selection
+        // Access Siyuan's global emoji data
+        const emojiCategories = (window as any).siyuan && (window as any).siyuan.emojis;
+
+        if (!emojiCategories || !Array.isArray(emojiCategories) || emojiCategories.length === 0) {
+            console.error("Siyuan emoji data not found, empty, or not an array.");
+            showMessage(this.i18n.emojiLoadError || "Could not load Siyuan emojis.", 3000, "error");
+            
+            const errorDialog = new Dialog({
+                title: this.i18n.selectEmoji || "Select Emoji",
+                content: `<div class="b3-dialog__content"><p>${this.i18n.emojiLoadError || "Could not load Siyuan emojis."}</p></div>
+                          <div class="b3-dialog__action"><button class="b3-button b3-button--cancel">${this.i18n.cancel}</button></div>`,
+                width: "360px",
+            });
+            const cancelBtn = errorDialog.element.querySelector(".b3-button--cancel");
+            if (cancelBtn) {
+                cancelBtn.addEventListener("click", () => errorDialog.destroy());
+            }
+            return;
+        }
+
+        // Function to get localized category title
+        const getCategoryTitle = (category: any) => {
+            const lang = (window as any).siyuan && (window as any).siyuan.config && (window as any).siyuan.config.lang;
+            if (lang === "ja_JP" && category.title_ja_jp) return category.title_ja_jp;
+            if (lang === "zh_CN" && category.title_zh_cn) return category.title_zh_cn;
+            return category.title || category.id; // Default to title or id
+        };
+
+        // Function to convert unicode string to emoji character
+        const getEmojiChar = (unicode: string): string => {
+            if (!unicode || typeof unicode !== "string") return "?";
+            try {
+                return unicode.split("-").map(hex => String.fromCodePoint(parseInt(hex, 16))).join("");
+            } catch (e) {
+                console.error(`Error converting unicode ${unicode} to char:`, e);
+                return "?"; // Fallback character
+            }
+        };
+
+        let emojiPickerHTML = `
+            <input type="text" class="b3-text-field fn__block emoji-filter-input" placeholder="${this.i18n.filterEmoji || "Filter emojis..."}" style="margin-bottom: 8px;">
+            <div class="emoji-picker-list" style="max-height: 300px; overflow-y: auto;">
+        `;
+
+        emojiCategories.forEach((category: any) => {
+            emojiPickerHTML += `
+                <div class="emoji-category" data-category-id="${category.id}">
+                    <div class="b3-label" style="margin-top: 10px; margin-bottom: 5px; font-weight: bold;">${getCategoryTitle(category)}</div>
+                    <div class="emoji-category-items" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 8px;">
+            `;
+            if (category.items && Array.isArray(category.items)) {
+                category.items.forEach((emoji: any) => {
+                    const char = getEmojiChar(emoji.unicode);
+                    const description = emoji.description || "";
+                    const keywords = emoji.keywords || "";
+                    const descriptionJaJp = emoji.description_ja_jp || ""; // Corrected property name
+                    const descriptionZhCn = emoji.description_zh_cn || ""; // Corrected property name
+
+                    emojiPickerHTML += `
+                        <button class="b3-button emoji-btn" 
+                                style="min-width: 36px; height: 36px; padding: 0; font-size: 20px; background-color: var(--b3-theme-surface); color: var(--b3-theme-on-surface);" 
+                                data-emoji="${char}"
+                                data-description="${description.toLowerCase()}"
+                                data-keywords="${keywords.toLowerCase()}"
+                                data-description-ja-jp="${descriptionJaJp.toLowerCase()}"
+                                data-description-zh-cn="${descriptionZhCn.toLowerCase()}"
+                                title="${description}">
+                            ${char}
+                        </button>
+                    `;
+                });
+            }
+            emojiPickerHTML += "</div></div>";
+        });
+
+        emojiPickerHTML += "</div>"; // Close emoji-picker-list
+
         const emojiDialog = new Dialog({
             title: this.i18n.selectEmoji || "Select Emoji",
             content: `
-            <div class="b3-dialog__content">
-                <div class="emoji-picker-container" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; max-height: 300px; overflow-y: auto; padding: 8px;">
-                    ${this.emojis.map(emoji => 
-                        `<button class="b3-button emoji-btn" style="min-width: 36px; height: 36px; padding: 0; font-size: 20px;" data-emoji="${emoji}">${emoji}</button>`
-                    ).join("")}
+                <div class="b3-dialog__content">
+                    ${emojiPickerHTML}
                 </div>
-            </div>
-            <div class="b3-dialog__action">
-                <button class="b3-button b3-button--cancel">${this.i18n.cancel}</button>
-            </div>`,
-            width: "360px",
+                <div class="b3-dialog__action">
+                    <button class="b3-button b3-button--cancel">${this.i18n.cancel}</button>
+                </div>`,
+            width: "420px", 
         });
-        
-        // Add event listeners for emoji buttons
-        const emojiButtons = emojiDialog.element.querySelectorAll(".emoji-btn");
+
+        const dialogElement = emojiDialog.element;
+        const filterInput = dialogElement.querySelector(".emoji-filter-input") as HTMLInputElement;
+        const emojiCategoriesElements = dialogElement.querySelectorAll(".emoji-category");
+
+        if (filterInput) {
+            filterInput.addEventListener("input", () => {
+                const filterText = filterInput.value.toLowerCase().trim();
+                emojiCategoriesElements.forEach(categoryEl => {
+                    const emojiButtons = categoryEl.querySelectorAll(".emoji-btn");
+                    let categoryHasVisibleEmojis = false;
+                    emojiButtons.forEach(btn => {
+                        const button = btn as HTMLElement;
+                        const desc = button.dataset.description || "";
+                        const keywords = button.dataset.keywords || "";
+                        const descJaJp = button.dataset.descriptionJaJp || "";
+                        const descZhCn = button.dataset.descriptionZhCn || "";
+                        
+                        const isMatch = filterText === "" || 
+                                        desc.includes(filterText) || 
+                                        keywords.includes(filterText) ||
+                                        descJaJp.includes(filterText) ||
+                                        descZhCn.includes(filterText);
+                        
+                        button.style.display = isMatch ? "" : "none";
+                        if (isMatch) {
+                            categoryHasVisibleEmojis = true;
+                        }
+                    });
+                    (categoryEl as HTMLElement).style.display = categoryHasVisibleEmojis ? "" : "none";
+                });
+            });
+        }
+
+        const emojiButtons = dialogElement.querySelectorAll(".emoji-btn");
         emojiButtons.forEach(btn => {
             btn.addEventListener("click", () => {
-                // Use the data-emoji attribute to ensure we get the exact emoji
                 const emoji = btn.getAttribute("data-emoji");
                 if (emoji) {
-                    // Update the hidden input value
                     iconInput.value = emoji;
-                    
-                    // Update the button text to show the selected emoji
                     buttonElement.textContent = emoji;
                     buttonElement.setAttribute("data-icon", emoji);
-                    
                     emojiDialog.destroy();
                 }
             });
         });
-        
-        // Add event listener for the cancel button
-        const cancelBtn = emojiDialog.element.querySelector(".b3-button--cancel");
-        cancelBtn.addEventListener("click", () => {
-            emojiDialog.destroy();
-        });
+
+        const cancelBtn = dialogElement.querySelector(".b3-button--cancel");
+        if (cancelBtn) {
+            cancelBtn.addEventListener("click", () => {
+                emojiDialog.destroy();
+            });
+        }
     }
 }

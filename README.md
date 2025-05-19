@@ -12,7 +12,7 @@ The Plugin manage handling of template dependend from the created path
 - Dependend from the path as regex apply a different template
 - Support any markdown-template in the template folder of the workspace
 - Move file to specific folder (support date format template variables, such as /Meeting/{{now | date "2006/01"}}/{{now | date "2006-01-02"}})
-- Set Icon for Templates
+- Set Icon for Templates with Emoji-Picker
 
 ## Installation
 To install the plugin, download it from the Siyuan plugin marketplace or clone the repository and add it to your Siyuan plugins folder.

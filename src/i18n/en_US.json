@@ -26,6 +26,7 @@
   "destinationPath": "Save Path",
   "icon": "Icon",
   "selectEmoji": "Select Emoji",
+  "filterEmoji": "Filter emojis...",
   "noTemplate": "No template rules defined yet.",
   "templateRulesSaved": "Template rules saved successfully",
   "templateApplied": "Applied template to new document: ",

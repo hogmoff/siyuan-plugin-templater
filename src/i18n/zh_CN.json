@@ -26,6 +26,7 @@
   "destinationPath": "保存路径",
   "icon": "图标",
   "selectEmoji": "选择表情符号",
+  "filterEmoji": "过滤表情符号...",
   "noTemplate": "尚未定义模板规则。",
   "templateRulesSaved": "模板规则保存成功",
   "templateApplied": "已将模板应用于新文档：",
