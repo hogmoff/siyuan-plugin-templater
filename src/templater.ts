@@ -9,6 +9,7 @@ import {
     getHPathByID, 
     getIDsByHPath,
     renderTemplate, 
+    setIcon,
     getChildBlocks, 
     insertBlock,
     deleteBlock,
@@ -20,7 +21,11 @@ export interface TemplateRule {
     templateId: string;   // ID of the template to apply
     description?: string; // Optional description of the rule
     destinationPath?: string; // Optional path to move the document after applying template
+    icon?: string; // Optional emoji icon for the document
 }
+
+// Standardvalue for icon
+export const DEFAULT_ICON = "📄";
 
 // Create a function to get the path of a document by its ID using getHPathbyID
 export async function getDocumentPathById(docId: string): Promise<any> {
@@ -157,6 +162,9 @@ export class Templater {
             try {
                 const regex = new RegExp(rule.pathPattern);
                 if (regex.test(docPath)) {
+                    if (!rule.icon) {
+                        rule.icon = DEFAULT_ICON;
+                    }
                     return rule;
                 }
             } catch (error) {
@@ -165,7 +173,6 @@ export class Templater {
         }
         return null;
     }
-
     
     /**
     * Prompt the user for a document name
@@ -211,11 +218,11 @@ export class Templater {
     /**
      * Apply a template to a document
      */
-    async applyTemplate(docId: string, templateId: string, destinationPath: string): Promise<boolean> {
+    async applyTemplate(docId: string, templateId: string, destinationPath: string, icon?: string): Promise<boolean> {
         try {
             let newName;
             let newPath;
-
+    
             if (! destinationPath || destinationPath.length == 0){
                 // Prompt for the document name
                 newName = await this.promptForDocumentName();
@@ -226,10 +233,10 @@ export class Templater {
                 }
             }
             else {
-                // Render SprigPath                
+                // Render SprigPath    
                 const sprigPath = await renderSprig(destinationPath);    
                 if (!sprigPath) return false;
-
+    
                 if (sprigPath.includes("/")) {
                     const sprigPathParts = sprigPath.split("/");
                     newName = sprigPathParts[sprigPathParts.length - 1];
@@ -240,21 +247,21 @@ export class Templater {
                     newPath = "";
                 }
             }    
-    
+            
             // Rename the document
             const responseRename = await renameDocbyId(docId, newName);
             if (!responseRename) {
                 console.error("Failed to rename document:", responseRename);
                 return false;
             }    
-    
+            
             // Get first BlockId
             const firstBlock = await getChildBlocks(docId);
             if (!firstBlock || !firstBlock.data) {
                 console.error("Failed to get first block:", firstBlock);
                 return false;
             }
-    
+            
             // First, render the template to get its content
             const absPath = await getWorkspaceDir() + "/" + templateId;
             const renderResponse = await renderTemplate(docId, absPath);    
@@ -269,31 +276,38 @@ export class Templater {
                 console.error("Failed to insert block: ", insertResponse);
                 return false;
             }
-    
+            
             // delete first block (empty)
             const deleteResponse = await deleteBlock(firstBlock.data[0].id);
             if (!deleteResponse || deleteResponse.code !== 0) {
                 console.error("Failed to delete block: ", deleteResponse);
                 return false;
             }
-
+    
             // NotebookID
             await new Promise(resolve => setTimeout(resolve, 200));
             const notebookId = await getNotebookIdByDocId(docId);
-
+    
             // Create Folder if not exist
             const ids = await getIDsByHPath(notebookId, newPath);
             let newPathDocId = null;
             if (!ids || ids.length === 0) {
                 newPathDocId = await createDocWithMd(notebookId, newPath, "");
-            }          
-
+            }    
+    
             // Move document to destination path if specified
-            if (newPath.length > 0) {                
+            if (newPath.length > 0) {    
                 const moveResponse = await moveDocbyId(docId, newPath, notebookId, newPathDocId);
                 if (!moveResponse || moveResponse.code !== 0) {
                     console.error("Failed to move document to destination path:", moveResponse);
-                    return false;
+                }
+            }
+    
+            // Set Icon if provided
+            if (icon && icon.length > 0) {
+                const iconResponse = await setIcon(docId, icon);
+                if (!iconResponse || iconResponse.code !== 0) {
+                    console.error("Failed to set document icon:", iconResponse);
                 }
             }
             

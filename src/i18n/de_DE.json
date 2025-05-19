@@ -24,6 +24,8 @@
     "pathPattern": "Pfad als Regex",
     "template": "Vorlage",
     "destinationPath": "Speicherpfad",
+    "icon": "Symbol",
+    "selectEmoji": "Emoji auswählen",
     "noTemplate": "Keine Vorlagenregeln vorhanden.",
     "templateRulesSaved": "Vorlagenregeln erfolgreich gespeichert",
     "templateApplied": "Vorlage auf neues Dokument angewendet: ",

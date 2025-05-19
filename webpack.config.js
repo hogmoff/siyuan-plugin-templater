@@ -34,6 +34,7 @@ module.exports = (env, argv) => {
             {from: "icon.png", to: "./siyuan-plugin-templater/"},
             {from: "README*.md", to: "./siyuan-plugin-templater/"},
             {from: "plugin.json", to: "./siyuan-plugin-templater/"},
+            {from: "emojis.json", to: "./siyuan-plugin-templater/"},
             {from: "src/i18n/", to: "./siyuan-plugin-templater/i18n/"},
             ],
         }));        

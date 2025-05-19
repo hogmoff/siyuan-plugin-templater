@@ -196,6 +196,36 @@ export async function renderTemplate(Id: string, Path: string): Promise<any> {
     }
 }
 
+export async function setIcon(docId: string, icon: string): Promise<any> {
+    // If icon is already a string like "1F4C1", keep it as is
+    // If it's an emoji character, convert it to its code point representation
+    let formattedIcon = icon;
+    
+    // Check if the icon is an emoji (surrogate pair)
+    if (icon.length === 1 || (icon.length === 2 && icon.codePointAt(0) > 0xFFFF)) {
+        // Convert emoji to its code point string representation
+        const codePoint = icon.codePointAt(0);
+        formattedIcon = codePoint.toString(16).toUpperCase();
+    } else {
+        // Clean up the string format if it's already a code point string
+        formattedIcon = icon.replace(/^0x/, "").toUpperCase().replace(/"/g, "");
+    }
+    
+    const data = {
+        id: docId,
+        attrs: { 
+            icon: formattedIcon
+        }
+    };    
+    const url = "/api/attr/setBlockAttrs";
+    try {
+        const file = await fetchSyncPost(url, data);
+        return file;
+    } catch (error_msg) {
+        return null;
+    }
+}
+
 export async function getChildBlocks(docId: string): Promise<any> {
     const data = {
         id: docId

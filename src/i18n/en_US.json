@@ -24,6 +24,8 @@
   "pathPattern": "Path Pattern (Regex)",
   "template": "Template",
   "destinationPath": "Save Path",
+  "icon": "Icon",
+  "selectEmoji": "Select Emoji",
   "noTemplate": "No template rules defined yet.",
   "templateRulesSaved": "Template rules saved successfully",
   "templateApplied": "Applied template to new document: ",

@@ -1,6 +1,6 @@
 {
   "name": "siyuan-plugin-templater",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "This is a templater plugin for Siyuan (https://b3log.org/siyuan)",
   "main": ".src/index.js",
   "scripts": {
@@ -21,6 +21,7 @@
     "esbuild-loader": "^3.0.1",
     "eslint": "^8.42.0",
     "mini-css-extract-plugin": "2.3.0",
+    "path-browserify": "^1.0.1",
     "sass": "^1.62.1",
     "sass-loader": "^12.6.0",
     "siyuan": "1.1.1",
