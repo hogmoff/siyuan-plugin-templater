@@ -35,6 +35,39 @@ export function getCurrentWeekNumber(): string {
     return (1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7)).toString();
 }
 
+// Utility function to generate an SVG icon for the day
+export function generateDateIconSVG(day: string): string {
+  // Basic styling
+  const bgColor = "white";
+  const strokeColor = "black";
+  const textColor = "black";
+  const fontSize = day.length > 1 ? "11" : "12"; // Slightly smaller font for two digits
+  
+  return `<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+  <rect x='1' y='1' width='22' height='22' fill='${bgColor}' stroke='${strokeColor}' stroke-width='1'/>
+  <rect x='1' y='1' width='22' height='5' fill='${strokeColor}' /> 
+  <text x='12' y='13.5' font-family='sans-serif' font-size='${fontSize}' text-anchor='middle' dominant-baseline='central' fill='${textColor}'>${day}</text>
+</svg>`;
+}
+
+// Utility function to generate an SVG icon for the week number
+export function generateWeekIconSVG(weekNumber: string): string {
+  // Basic styling
+  const bgColor = "white";
+  const strokeColor = "black";
+  const textColor = "black";
+  const textToShow = `W${weekNumber}`;
+  // Adjust font size based on text length dynamically. Base size 8.
+  const fontSize = textToShow.length > 3 ? "7" : "8";
+
+
+  return `<svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'>
+  <rect x='1' y='1' width='22' height='22' fill='${bgColor}' stroke='${strokeColor}' stroke-width='1'/>
+  <rect x='1' y='1' width='22' height='5' fill='${strokeColor}' /> 
+  <text x='12' y='13.5' font-family='sans-serif' font-size='${fontSize}' text-anchor='middle' dominant-baseline='central' fill='${textColor}'>${textToShow}</text>
+</svg>`;
+}
+
 export interface TemplateRule {
     pathPattern: string;  // Regex pattern to match document paths
     templateId: string;   // ID of the template to apply
@@ -324,14 +357,20 @@ export class Templater {
     
             // Set Icon if provided
             if (iconInput && iconInput.length > 0) {
-                let processedIcon = iconInput;
-                if (processedIcon.includes("{{date}}")) {
-                    processedIcon = processedIcon.replace("{{date}}", getCurrentDateString());
+                let finalIconString: string;
+
+                if (iconInput === "{{date}}") {
+                    const currentDay = getCurrentDateString();
+                    finalIconString = generateDateIconSVG(currentDay);
+                } else if (iconInput === "{{week}}") {
+                    const currentWeek = getCurrentWeekNumber();
+                    finalIconString = generateWeekIconSVG(currentWeek);
+                } else {
+                    // For standard emojis or other direct strings (no more placeholder replacement here)
+                    finalIconString = iconInput;
                 }
-                if (processedIcon.includes("{{week}}")) {
-                    processedIcon = processedIcon.replace("{{week}}", getCurrentWeekNumber());
-                }
-                const iconResponse = await setIcon(docId, processedIcon);
+                
+                const iconResponse = await setIcon(docId, finalIconString);
                 if (!iconResponse || iconResponse.code !== 0) {
                     console.error("Failed to set document icon:", iconResponse);
                 }

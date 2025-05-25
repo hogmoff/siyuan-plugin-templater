@@ -2,9 +2,19 @@
   "compilerOptions": {
     "noImplicitAny": true,
     "module": "commonjs",
-    "target": "es6"
+    "target": "es6",
+    "baseUrl": ".", // Needed for paths mapping
+    "paths": {
+      "siyuan": ["src/siyuan-mock.ts"]
+    },
+    "esModuleInterop": true, // Often useful with ts-node and commonjs modules
+    "skipLibCheck": true // Can help avoid issues with mock module typing
   },
   "include": [
     "src/**/*.ts"
   ],
+  "exclude": [ // Explicitly exclude node_modules from project compilation context
+    "node_modules",
+    "**/*.test.ts" // Also exclude test files from this specific tsconfig if it's used for builds
+  ]
 }

@@ -1,5 +1,9 @@
-import { getCurrentDateString, getCurrentWeekNumber, Templater, DEFAULT_ICON } from './templater';
+import * as templaterMod from './templater'; // Import all exports for spying
 import * as api from './api'; // Import to allow spying/mocking individual functions
+
+// Destructure needed functions from templaterMod for direct use in tests if desired
+const { getCurrentDateString, getCurrentWeekNumber, Templater, generateDateIconSVG, generateWeekIconSVG } = templaterMod;
+
 
 // Mock the entire api module
 jest.mock('./api', () => ({
@@ -21,22 +25,26 @@ jest.mock('./api', () => ({
 
 // Spy on setIcon to check its arguments later
 const setIconSpy = jest.spyOn(api, 'setIcon');
+let generateDateIconSVGSpy: jest.SpyInstance;
+let generateWeekIconSVGSpy: jest.SpyInstance;
+let getCurrentDateStringSpy: jest.SpyInstance;
+let getCurrentWeekNumberSpy: jest.SpyInstance;
 
 
 describe('Templater Utility Functions', () => {
   describe('getCurrentDateString', () => {
     it('should return a string', () => {
-      expect(typeof getCurrentDateString()).toBe('string');
+      expect(typeof templaterMod.getCurrentDateString()).toBe('string');
     });
 
     it('should return a string of length 1 or 2', () => {
-      const dateStr = getCurrentDateString();
+      const dateStr = templaterMod.getCurrentDateString();
       expect(dateStr.length).toBeGreaterThanOrEqual(1);
       expect(dateStr.length).toBeLessThanOrEqual(2);
     });
 
     it('should return a valid day format (D or DD)', () => {
-      const dateStr = getCurrentDateString();
+      const dateStr = templaterMod.getCurrentDateString();
       const dateNum = parseInt(dateStr, 10);
       expect(dateNum).toBeGreaterThanOrEqual(1);
       expect(dateNum).toBeLessThanOrEqual(31);
@@ -48,16 +56,16 @@ describe('Templater Utility Functions', () => {
 
   describe('getCurrentWeekNumber', () => {
     it('should return a string', () => {
-      expect(typeof getCurrentWeekNumber()).toBe('string');
+      expect(typeof templaterMod.getCurrentWeekNumber()).toBe('string');
     });
 
     it('should be parseable to a number', () => {
-      const weekStr = getCurrentWeekNumber();
+      const weekStr = templaterMod.getCurrentWeekNumber();
       expect(() => parseInt(weekStr, 10)).not.toThrow();
     });
 
     it('should be a number between 1 and 53', () => {
-      const weekStr = getCurrentWeekNumber();
+      const weekStr = templaterMod.getCurrentWeekNumber();
       const weekNum = parseInt(weekStr, 10);
       expect(weekNum).toBeGreaterThanOrEqual(1);
       expect(weekNum).toBeLessThanOrEqual(53);
@@ -66,7 +74,7 @@ describe('Templater Utility Functions', () => {
 });
 
 describe('Templater Class', () => {
-  let templater: Templater;
+  let templater: templaterMod.Templater; // Use module alias for type annotation
 
   beforeEach(() => {
     // Reset mocks before each test
@@ -82,6 +90,12 @@ describe('Templater Class', () => {
     templater = new Templater('test-plugin-id', mockI18n);
     // Mock loadRules to prevent file system access during tests for applyTemplate
     jest.spyOn(templater, 'loadRules').mockImplementation(() => Promise.resolve());
+
+    // Spy on the actual SVG generation functions
+    generateDateIconSVGSpy = jest.spyOn(templaterMod, 'generateDateIconSVG');
+    generateWeekIconSVGSpy = jest.spyOn(templaterMod, 'generateWeekIconSVG');
+    getCurrentDateStringSpy = jest.spyOn(templaterMod, 'getCurrentDateString');
+    getCurrentWeekNumberSpy = jest.spyOn(templaterMod, 'getCurrentWeekNumber');
   });
 
   describe('applyTemplate', () => {
@@ -90,25 +104,45 @@ describe('Templater Class', () => {
     // Always provide destinationPath to avoid promptForDocumentName for these icon tests
     const destinationPath = 'test/New Document Name'; 
 
-    it('should call setIcon with processed date string when icon is {{date}}', async () => {
+    it('should call generateDateIconSVG and setIcon with its SVG output for icon "{{date}}"', async () => {
       const icon = '{{date}}';
-      const expectedDate = getCurrentDateString();
+      const currentDate = templaterMod.getCurrentDateString(); // Get the date for assertion
+      const expectedSVG = templaterMod.generateDateIconSVG(currentDate); // Generate expected SVG
+
       await templater.applyTemplate(docId, templateId, destinationPath, icon);
-      expect(setIconSpy).toHaveBeenCalledWith(docId, expectedDate);
+      
+      expect(getCurrentDateStringSpy).toHaveBeenCalled();
+      expect(generateDateIconSVGSpy).toHaveBeenCalledWith(currentDate);
+      expect(setIconSpy).toHaveBeenCalledWith(docId, expectedSVG);
     });
 
-    it('should call setIcon with processed week string when icon is {{week}}', async () => {
+    it('should call generateWeekIconSVG and setIcon with its SVG output for icon "{{week}}"', async () => {
       const icon = '{{week}}';
-      const expectedWeek = getCurrentWeekNumber();
+      const currentWeek = templaterMod.getCurrentWeekNumber(); // Get the week for assertion
+      const expectedSVG = templaterMod.generateWeekIconSVG(currentWeek); // Generate expected SVG
+      
       await templater.applyTemplate(docId, templateId, destinationPath, icon);
-      expect(setIconSpy).toHaveBeenCalledWith(docId, expectedWeek);
+
+      expect(getCurrentWeekNumberSpy).toHaveBeenCalled();
+      expect(generateWeekIconSVGSpy).toHaveBeenCalledWith(currentWeek);
+      expect(setIconSpy).toHaveBeenCalledWith(docId, expectedSVG);
     });
 
-    it('should call setIcon with the emoji when icon is a standard emoji', async () => {
+    it('should call setIcon with the emoji for a standard emoji icon', async () => {
       const icon = '🚀';
       await templater.applyTemplate(docId, templateId, destinationPath, icon);
       expect(setIconSpy).toHaveBeenCalledWith(docId, '🚀');
+      expect(generateDateIconSVGSpy).not.toHaveBeenCalled();
+      expect(generateWeekIconSVGSpy).not.toHaveBeenCalled();
     });
+    
+    it('should call setIcon with the literal string for a custom string icon', async () => {
+        const icon = 'custom-string';
+        await templater.applyTemplate(docId, templateId, destinationPath, icon);
+        expect(setIconSpy).toHaveBeenCalledWith(docId, 'custom-string');
+        expect(generateDateIconSVGSpy).not.toHaveBeenCalled();
+        expect(generateWeekIconSVGSpy).not.toHaveBeenCalled();
+      });
 
     it('should not call setIcon when icon is undefined', async () => {
       await templater.applyTemplate(docId, templateId, destinationPath, undefined);
@@ -120,35 +154,26 @@ describe('Templater Class', () => {
       expect(setIconSpy).not.toHaveBeenCalled();
     });
 
-    it('should call setIcon with processed combined string for "test-{{date}}"', async () => {
+    it('should call setIcon with the literal string for "test-{{date}}"', async () => {
       const icon = 'test-{{date}}';
-      const expectedDate = getCurrentDateString();
       await templater.applyTemplate(docId, templateId, destinationPath, icon);
-      expect(setIconSpy).toHaveBeenCalledWith(docId, `test-${expectedDate}`);
+      expect(setIconSpy).toHaveBeenCalledWith(docId, icon); // Passed literally
+      expect(generateDateIconSVGSpy).not.toHaveBeenCalled();
     });
 
-    it('should call setIcon with processed combined string for "test-{{week}}"', async () => {
+    it('should call setIcon with the literal string for "test-{{week}}"', async () => {
       const icon = 'test-{{week}}';
-      const expectedWeek = getCurrentWeekNumber();
       await templater.applyTemplate(docId, templateId, destinationPath, icon);
-      expect(setIconSpy).toHaveBeenCalledWith(docId, `test-${expectedWeek}`);
+      expect(setIconSpy).toHaveBeenCalledWith(docId, icon); // Passed literally
+      expect(generateWeekIconSVGSpy).not.toHaveBeenCalled();
     });
     
-    it('should call setIcon with processed combined string for "{{date}}-{{week}}"', async () => {
+    it('should call setIcon with the literal string for "{{date}}-{{week}}"', async () => {
       const icon = '{{date}}-{{week}}';
-      const expectedDate = getCurrentDateString();
-      const expectedWeek = getCurrentWeekNumber();
       await templater.applyTemplate(docId, templateId, destinationPath, icon);
-      expect(setIconSpy).toHaveBeenCalledWith(docId, `${expectedDate}-${expectedWeek}`);
+      expect(setIconSpy).toHaveBeenCalledWith(docId, icon); // Passed literally
+      expect(generateDateIconSVGSpy).not.toHaveBeenCalled();
+      expect(generateWeekIconSVGSpy).not.toHaveBeenCalled();
     });
-
-    it('should call setIcon with processed combined string for "{{date}} and {{week}}"', async () => {
-        const icon = '{{date}} and {{week}}';
-        const expectedDate = getCurrentDateString();
-        const expectedWeek = getCurrentWeekNumber();
-        await templater.applyTemplate(docId, templateId, destinationPath, icon);
-        expect(setIconSpy).toHaveBeenCalledWith(docId, `${expectedDate} and ${expectedWeek}`);
-      });
-
   });
 });

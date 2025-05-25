@@ -13,6 +13,9 @@ The Plugin manage handling of template dependend from the created path
 - Support any markdown-template in the template folder of the workspace
 - Move file to specific folder (support date format template variables, such as /Meeting/{{now | date "2006/01"}}/{{now | date "2006-01-02"}})
 - Set Icon for Templates with Emoji-Picker
+  - Additionally, you can use `{{date}}` or `{{week}}` as the icon string.
+    - `{{date}}`: Renders a dynamic SVG icon representing the current day of the month (e.g., a calendar page showing the day).
+    - `{{week}}`: Renders a dynamic SVG icon representing the current week of the year (e.g., a calendar page showing "W" followed by the week number).
 
 ## Installation
 To install the plugin, download it from the Siyuan plugin marketplace or clone the repository and add it to your Siyuan plugins folder.

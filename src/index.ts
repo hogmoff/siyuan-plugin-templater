@@ -6,6 +6,7 @@ import {
 } from "siyuan";
 import "./index.scss";
 import { Templater, TemplateRule, getDocumentPathById, DEFAULT_ICON } from "./templater";
+export { setIcon } from "./api"; // Export for testing
 
 export default class TemplaterPlugin extends Plugin {
     private templater: Templater;

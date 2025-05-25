@@ -1,4 +1,4 @@
-import { Plugin, fetchPost, fetchSyncPost } from "siyuan";
+import { Plugin, fetchPOST, fetchSyncPost } from "siyuan";
 
 // async function request(url: string, data: any) {
 //     const response: IWebSocketData = await fetchSyncPost(url, data);
