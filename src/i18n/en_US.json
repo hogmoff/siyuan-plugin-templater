@@ -30,5 +30,6 @@
   "noTemplate": "No template rules defined yet.",
   "templateRulesSaved": "Template rules saved successfully",
   "templateApplied": "Applied template to new document: ",
-  "templateAppliedFailed": "Failed to apply template to: "
+  "templateAppliedFailed": "Failed to apply template to: ",
+  "dynamicIcons": "Dynamic Icons"
 }

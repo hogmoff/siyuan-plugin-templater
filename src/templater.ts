@@ -16,12 +16,31 @@ import {
     renderSprig
 } from "./api";
 
+// Utility function to get current date as DD or D
+export function getCurrentDateString(): string {
+    const date = new Date();
+    const day = date.getDate();
+    return day < 10 ? `0${day}` : `${day}`;
+}
+
+// Utility function to get current week number
+export function getCurrentWeekNumber(): string {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    // Thursday in current week decides the year.
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    // January 4 is always in week 1.
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    // Adjust to Thursday in week 1 and count number of weeks from date to week1.
+    return (1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7)).toString();
+}
+
 export interface TemplateRule {
     pathPattern: string;  // Regex pattern to match document paths
     templateId: string;   // ID of the template to apply
     description?: string; // Optional description of the rule
     destinationPath?: string; // Optional path to move the document after applying template
-    icon?: string; // Optional emoji icon for the document
+    icon?: string; // Optional emoji icon for the document, can be dynamic like {{date}} or {{week}}
 }
 
 // Standardvalue for icon
@@ -218,7 +237,7 @@ export class Templater {
     /**
      * Apply a template to a document
      */
-    async applyTemplate(docId: string, templateId: string, destinationPath: string, icon?: string): Promise<boolean> {
+    async applyTemplate(docId: string, templateId: string, destinationPath: string, iconInput?: string): Promise<boolean> {
         try {
             let newName;
             let newPath;
@@ -304,8 +323,15 @@ export class Templater {
             }
     
             // Set Icon if provided
-            if (icon && icon.length > 0) {
-                const iconResponse = await setIcon(docId, icon);
+            if (iconInput && iconInput.length > 0) {
+                let processedIcon = iconInput;
+                if (processedIcon.includes("{{date}}")) {
+                    processedIcon = processedIcon.replace("{{date}}", getCurrentDateString());
+                }
+                if (processedIcon.includes("{{week}}")) {
+                    processedIcon = processedIcon.replace("{{week}}", getCurrentWeekNumber());
+                }
+                const iconResponse = await setIcon(docId, processedIcon);
                 if (!iconResponse || iconResponse.code !== 0) {
                     console.error("Failed to set document icon:", iconResponse);
                 }

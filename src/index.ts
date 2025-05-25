@@ -469,6 +469,13 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         let emojiPickerHTML = `
             <input type="text" class="b3-text-field fn__block emoji-filter-input" placeholder="${this.i18n.filterEmoji || "Filter emojis..."}" style="margin-bottom: 8px;">
             <div class="emoji-picker-list" style="max-height: 300px; overflow-y: auto;">
+                <div class="emoji-category" data-category-id="dynamic-icons">
+                    <div class="b3-label" style="margin-top: 10px; margin-bottom: 5px; font-weight: bold;">${this.i18n.dynamicIcons}</div>
+                    <div class="emoji-category-items" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px;">
+                        <button class="b3-button dynamic-icon-btn" data-icon-value="{{date}}" style="min-width: 80px; height: 36px; padding: 0 8px; background-color: var(--b3-theme-surface); color: var(--b3-theme-on-surface);">{{date}}</button>
+                        <button class="b3-button dynamic-icon-btn" data-icon-value="{{week}}" style="min-width: 80px; height: 36px; padding: 0 8px; background-color: var(--b3-theme-surface); color: var(--b3-theme-on-surface);">{{week}}</button>
+                    </div>
+                </div>
         `;
 
         emojiCategories.forEach((category: any) => {
@@ -544,7 +551,17 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                             categoryHasVisibleEmojis = true;
                         }
                     });
-                    (categoryEl as HTMLElement).style.display = categoryHasVisibleEmojis ? "" : "none";
+                    // Always show dynamic icons category, otherwise filter it
+                    if ((categoryEl as HTMLElement).dataset.categoryId === "dynamic-icons") {
+                        (categoryEl as HTMLElement).style.display = "";
+                        // also ensure the dynamic icon buttons themselves are not hidden by the filter
+                        const dynamicButtons = categoryEl.querySelectorAll(".dynamic-icon-btn");
+                        dynamicButtons.forEach(btn => {
+                            (btn as HTMLElement).style.display = "";
+                        });
+                    } else {
+                        (categoryEl as HTMLElement).style.display = categoryHasVisibleEmojis ? "" : "none";
+                    }
                 });
             });
         }
@@ -557,6 +574,19 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                     iconInput.value = emoji;
                     buttonElement.textContent = emoji;
                     buttonElement.setAttribute("data-icon", emoji);
+                    emojiDialog.destroy();
+                }
+            });
+        });
+
+        const dynamicIconButtons = dialogElement.querySelectorAll(".dynamic-icon-btn");
+        dynamicIconButtons.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const iconValue = btn.getAttribute("data-icon-value");
+                if (iconValue) {
+                    iconInput.value = iconValue;
+                    buttonElement.textContent = iconValue;
+                    buttonElement.setAttribute("data-icon", iconValue); // Ensure data-icon is also updated for consistency
                     emojiDialog.destroy();
                 }
             });

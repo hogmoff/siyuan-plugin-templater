@@ -30,5 +30,6 @@
   "noTemplate": "尚未定义模板规则。",
   "templateRulesSaved": "模板规则保存成功",
   "templateApplied": "已将模板应用于新文档：",
-  "templateAppliedFailed": "应用模板失败："
+  "templateAppliedFailed": "应用模板失败：",
+  "dynamicIcons": "动态图标"
 }
