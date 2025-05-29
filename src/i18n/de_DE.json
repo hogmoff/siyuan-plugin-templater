@@ -42,10 +42,15 @@
     "dynamicIconWeekdayType": "Wochentagsbeginn",
     "dynamicIconType": "Icon-Typ",
     "dynamicIconContent": "Benutzerdefinierter Inhalt",
-    "dynamicIconPreview": "Preview (raw string):",
+    "dynamicIconPreview": "Vorschau:",
     "weekdaySunday": "Sonntag",
     "weekdayMonday": "Montag",
-    "typeDate": "Date",
+    "typeFullDate": "Vollständiges Datum",
+    "typeDate": "Datum",
+    "typeWeek": "Woche",
     "typeWeekday": "Wochentag",
+    "typeMonth": "Monat",
+    "typeYear": "Jahr",
+    "typeDayCount": "Tage zählen",
     "typeCustomText": "Benutzerdefinierter Text"
   }

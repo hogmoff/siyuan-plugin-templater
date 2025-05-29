@@ -13,6 +13,7 @@ The Plugin manage handling of template dependend from the created path
 - Support any markdown-template in the template folder of the workspace
 - Move file to specific folder (support date format template variables, such as /Meeting/{{now | date "2006/01"}}/{{now | date "2006-01-02"}})
 - Set Icon for Templates with Emoji-Picker
+- Set dynamic icons
 
 ## Installation
 To install the plugin, download it from the Siyuan plugin marketplace or clone the repository and add it to your Siyuan plugins folder.
@@ -36,7 +37,7 @@ Set the Save Path if you need a specific target location for the rendered templa
 If field is empty then document will be created on current path and ask for document name. Save Path support date format template variables from daily notes. Not existing paths are created.
 
 #### Example
-> "/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-01"}} creates a new document in folder "/Meeting/20xx/xx/" with name "Meeting 20xx-xx-xx" (today date) 
+> "/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-02"}} creates a new document in folder "/Meeting/20xx/xx/" with name "Meeting 20xx-xx-xx" (today date) 
 
 ## Available Languages
 - English

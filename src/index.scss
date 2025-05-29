@@ -3,11 +3,7 @@
   padding-bottom: 8px;
 
   .b3-label {
-    margin-bottom: 4px;
-  }
-
-  .b3-text-field {
-    margin-bottom: 8px;
+    margin-bottom: 2px;
   }
 
   .b3-tab-bar {
@@ -65,55 +61,115 @@
   }
 }
 
+.templater-tabs {
+  margin-bottom: 8px !important;
+}
+
+.templater-tab {
+  padding: 6px 12px !important;
+}
+
 .b3-dialog__content {
   padding: 20px;
 }
 
-.b3-dialog__action {
-  padding: 10px 20px;
-  border-top: 1px solid #ccc;
-  text-align: right;
+.b3-button--saveDialog,
+.b3-button--saveDoc,
+.b3-button--save {
+  background-color: #007BFF;
+  color: white;
+  border-color: #0069d9;
 }
 
-.b3-button {
-  padding: 8px 16px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #f1f1f1;
-  cursor: pointer;
+.b3-button--add {
+  background-color: #09b320;
+  color: white;
+  border-color: #078818;
+  margin-right: auto;
 }
 
-.b3-button--outline {
-  background-color: transparent;
-}
-
-.b3-button--text {
-  background-color: transparent;
-  border: none;
-}
-
+.b3-button--remove,
 .b3-button--cancel {
   background-color: #f44336;
   color: white;
+  border-color: #d32f2f;
 }
 
-.b3-button--primary {
-  background-color: #007BFF;
-  color: white;
+
+.b3-button--saveDialog:hover,
+.b3-button--saveDoc:hover,
+.b3-button--save:hover {
+  background-color: #0069d9;
 }
 
-.b3-text-field {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.b3-button--add:hover {
+  background-color: #078818;
+}
+
+.b3-button--remove:hover,
+.b3-button--cancel:hover {
+  background-color: #d32f2f;
+}
+
+.b3-form__item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.b3-form__item .b3-label {
+  width: 100px;
+  flex-shrink: 0;
+  margin-bottom: 0;
+  margin-right: 8px;
+}
+
+.b3-form__item .b3-text-field,
+.b3-form__item .b3-select {
+  flex-grow: 1;
 }
 
 .b3-select {
   width: 100%;
-  padding: 8px;
+  padding: 4px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  height: 32px;
+  line-height: 20px;
+  appearance: none; 
+  background-color: var(--b3-theme-background, #fff);
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+  padding-right: 32px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.b3-text-field {
+  width: 100%;
+  padding: 2px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.b3-text-field.path-pattern,
+.b3-text-field.template-id,
+.b3-text-field.description,
+.b3-text-field.destination-path {
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-y: auto;
+  max-height: 60px;
 }
 
 .emoji-picker-btn {
@@ -137,7 +193,7 @@
 }
 
 .emoji-picker-list {
-  max-height: 300px;
+  max-height: 250px;
   overflow-y: auto;
 }
 
@@ -153,13 +209,8 @@
 }
 
 #dynamic-icon-preview {
-  display: block;
-  margin-top: 8px;
-  padding: 5px;
-  background-color: var(--b3-theme-surface-lighter);
-  border-radius: var(--b3-border-radius-b);
-  width: 128px;
-  height: 128px;
+  width: 80px;
+  height: 80px;
 }
 
 #dynamic-icon-preview svg {
@@ -167,3 +218,43 @@
   height: 100%;
 }
 
+#dynamic-icon-url {
+  display: block;
+  font-size: 11px;
+  max-height: 80px;
+  overflow-y: auto;
+  word-break: break-all;
+  white-space: pre-wrap;
+  padding: 4px;
+  background-color: var(--b3-theme-background-light, #f5f5f5);
+  border-radius: 4px;
+  border: 1px solid var(--b3-border-color);
+  width: 100%;
+  max-width: 100%;
+}
+
+.fn__flex-1 {
+  height: auto;
+  min-width: 0;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.icon-dialog {
+  max-width: 420px;
+  width: 100%;
+}
+
+.icon-dialog .b3-form__item {
+  margin-bottom: 8px;
+}
+
+.icon-dialog .b3-text-field,
+.icon-dialog .b3-select {
+  height: 15px;
+  padding-top: 2px;
+  padding-bottom: 4px;
+  padding-left: 8px;
+  padding-right: 30px;
+  line-height: 10px;
+}

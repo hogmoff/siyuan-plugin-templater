@@ -190,7 +190,7 @@ export class Templater {
             <input class="b3-text-field fn__block" placeholder="${this.i18n.enterDocName}" id="templater-doc-name">
             <div class="b3-dialog__action">
                 <button class="b3-button b3-button--cancel" style="margin-right: 8px;">${this.i18n.cancel}</button>
-                <button class="b3-button b3-button--text">${this.i18n.confirm}</button>
+                <button class="b3-button b3-button--saveDoc">${this.i18n.confirm}</button>
             </div>
             </div>`,
             width: "400px",
@@ -198,7 +198,7 @@ export class Templater {
         });
         
         // Add event listeners for the buttons after dialog is created
-        const confirmButton = dialog.element.querySelector(".b3-button--text");
+        const confirmButton = dialog.element.querySelector(".b3-button--saveDoc");
         const cancelButton = dialog.element.querySelector(".b3-button--cancel");
         
         confirmButton.addEventListener("click", () => {

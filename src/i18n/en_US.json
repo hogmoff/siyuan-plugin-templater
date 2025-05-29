@@ -45,7 +45,12 @@
   "dynamicIconPreview": "Preview (raw string):",
   "weekdaySunday": "Sunday",
   "weekdayMonday": "Monday",
+  "typeFullDate": "Full Date",
   "typeDate": "Date",
+  "typeWeek": "Week",
   "typeWeekday": "Weekday",
+  "typeMonth": "Month",
+  "typeYear": "Year",
+  "typeDayCount": "Day Count",
   "typeCustomText": "Custom Text"
 }
