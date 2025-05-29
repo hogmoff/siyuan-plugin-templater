@@ -1,8 +1,8 @@
 {
   "name": "siyuan-plugin-templater",
   "author": "hogmoff",
-  "url": "https://github.com/siyuan-note/plugin-sample",
-  "version": "0.3.0",
+  "url": "https://github.com/hogmoff/siyuan-plugin-templater",
+  "version": "0.4.0",
   "minAppVersion": "3.1.28",
   "backends": [
     "windows",
