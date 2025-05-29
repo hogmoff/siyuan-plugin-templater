@@ -22,6 +22,7 @@ export interface TemplateRule {
     description?: string; // Optional description of the rule
     destinationPath?: string; // Optional path to move the document after applying template
     icon?: string; // Optional emoji icon for the document
+    iconUrl?: string; // Optional URL for the icon
 }
 
 // Standardvalue for icon
@@ -87,6 +88,10 @@ export class Templater {
                 console.error("Failed to create initial rules file:", saveError);
             }
         }
+    }
+
+    public setRules(newRules: TemplateRule[]): void {
+        this.rules = newRules;
     }
 
     /**
@@ -218,7 +223,7 @@ export class Templater {
     /**
      * Apply a template to a document
      */
-    async applyTemplate(docId: string, templateId: string, destinationPath: string, icon?: string): Promise<boolean> {
+    async applyTemplate(docId: string, templateId: string, destinationPath: string, icon?: string, iconUrl?: string): Promise<boolean> {
         try {
             let newName;
             let newPath;
@@ -305,7 +310,7 @@ export class Templater {
     
             // Set Icon if provided
             if (icon && icon.length > 0) {
-                const iconResponse = await setIcon(docId, icon);
+                const iconResponse = await setIcon(docId, icon, iconUrl);
                 if (!iconResponse || iconResponse.code !== 0) {
                     console.error("Failed to set document icon:", iconResponse);
                 }

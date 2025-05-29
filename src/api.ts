@@ -1,4 +1,4 @@
-import { Plugin, fetchPost, fetchSyncPost } from "siyuan";
+import { IWebSocketData, IObject, fetchGet, fetchSyncPost } from "siyuan";
 
 // async function request(url: string, data: any) {
 //     const response: IWebSocketData = await fetchSyncPost(url, data);
@@ -196,21 +196,74 @@ export async function renderTemplate(Id: string, Path: string): Promise<any> {
     }
 }
 
-export async function setIcon(docId: string, icon: string): Promise<any> {
-    // If icon is already a string like "1F4C1", keep it as is
-    // If it's an emoji character, convert it to its code point representation
-    let formattedIcon = icon;
-    
-    // Check if the icon is an emoji (surrogate pair)
-    if (icon.length === 1 || (icon.length === 2 && icon.codePointAt(0) > 0xFFFF)) {
-        // Convert emoji to its code point string representation
-        const codePoint = icon.codePointAt(0);
-        formattedIcon = codePoint.toString(16).toUpperCase();
-    } else {
-        // Clean up the string format if it's already a code point string
-        formattedIcon = icon.replace(/^0x/, "").toUpperCase().replace(/"/g, "");
+export function getDynamicIconUrl(
+    color: string,
+    lang: string,
+    date: string,
+    weekdayType: string,
+    type: string,
+    content: string
+): string { 
+    const params = new URLSearchParams();
+    params.append("color", color);
+    params.append("lang", lang);
+    params.append("date", date);
+    params.append("weekdayType", weekdayType);
+    params.append("type", type);
+    params.append("content", content);
+
+    const url = `/api/icon/getDynamicIcon?${params.toString()}`;
+    return url;
+
+}
+
+export async function getDynamicIcon(url: string): Promise<string | null> {
+
+    try {
+        const iconData = await new Promise<string | null>((resolve, reject) => {
+            fetchGet(url, (responseData: IWebSocketData | IObject | string) => {
+                if (typeof responseData === "string") {
+                    resolve(responseData);
+                } else {
+                    console.warn(`Dynamic icon API returned non-string data. Type: ${typeof responseData}`, responseData);
+                    resolve(null);
+                }
+            });
+        });
+
+        if (!iconData) {
+            console.log("Dynamic icon fetch returned null (e.g., non-string response or timeout).");
+        }
+        return iconData;
+
+    } catch (error_msg) {
+        console.error("Error fetching dynamic icon (Promise rejected):", error_msg);
+        return null;
     }
-    
+}
+
+export async function setIcon(docId: string, icon: string, iconUrl: string): Promise<any> {
+    // If icon is already a string like "1F4C1", keep it as is
+    // If it"s an emoji character, convert it to its code point representation
+    let formattedIcon = icon;
+
+    if (iconUrl.length === 0){
+        // Check if the icon is an emoji (surrogate pair)
+        if (icon.length === 1 || (icon.length === 2 && icon.codePointAt(0) > 0xFFFF)) {
+            // Convert emoji to its code point string representation
+            const codePoint = icon.codePointAt(0);
+            formattedIcon = codePoint.toString(16).toUpperCase();
+        } else {
+            // Clean up the string format if it's already a code point string
+            formattedIcon = icon.replace(/^0x/, "").toUpperCase().replace(/"/g, "");
+        }
+    }
+    else {
+        formattedIcon = iconUrl.substring(1);
+        // Replace date=& with date from today
+        formattedIcon = formattedIcon.replace(/date=&/, `date=${new Date().toISOString().split("T")[0]}&`);
+    }
+
     const data = {
         id: docId,
         attrs: { 

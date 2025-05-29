@@ -6,17 +6,20 @@ import {
 } from "siyuan";
 import "./index.scss";
 import { Templater, TemplateRule, getDocumentPathById, DEFAULT_ICON } from "./templater";
+import { getDynamicIconUrl, getDynamicIcon } from "./api";
 
 export default class TemplaterPlugin extends Plugin {
     private templater: Templater;
     public setting: Setting;
     private processedDocuments: Set<string> = new Set();
     private pluginPath: string;
+    private iconSVG: string[] = [];
+    private iconUrl: string[] = [];
 
     async onload() {
         this.templater = new Templater(this.name, this.i18n);
         this.pluginPath = `/data/plugins/${this.name}`;
-        
+
         // Add icon for the plugin
         this.addIcons(`<symbol id="iconTemplater" viewBox="0 0 256.000000 256.000000">
 <g transform="translate(0.000000,256.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
@@ -55,15 +58,15 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             }
         });
 
-        // Listen for document creation       
-        this.eventBus.on("switch-protyle", this.handleDocumentLoaded.bind(this)); 
+        // Listen for document creation
+        this.eventBus.on("switch-protyle", this.handleDocumentLoaded.bind(this));
 
         // Load Rules
         await this.templater.loadRules();
 
         // Initialize settings
         this.initSettings();
-        
+
         console.log("Templater plugin loaded");
     }
 
@@ -81,61 +84,62 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         if (!detail || !detail.protyle || !detail.protyle.path) {
             return;
         }
-        
+
         // Get Document ID
         const docId = detail.protyle.block?.rootID;
         if (!docId) {
             return;
         }
-        
+
         // Skip if we've already processed this document
         if (this.processedDocuments.has(docId)) {
             return;
         }
-    
+
         // Check if it's a new document by examining the action array
         const isNew = detail.isNew || (
-            detail.protyle && 
-            detail.protyle.options && 
-            detail.protyle.options.action && 
-            Array.isArray(detail.protyle.options.action) && 
+            detail.protyle &&
+            detail.protyle.options &&
+            detail.protyle.options.action &&
+            Array.isArray(detail.protyle.options.action) &&
             detail.protyle.options.action.includes("cb-get-opennew")
         );
-        
+
         if (isNew) {
             const docPath = detail.protyle.path;
             const HdocPath = await getDocumentPathById(docId);
-            
+
             // Find matching template
             const matchedRule = this.templater.findTemplateForPath(HdocPath);
             if (matchedRule) {
                 // Add to processed list first to prevent double processing
                 this.processedDocuments.add(docId);
-                
+
                 // Apply the template with destination path and icon if specified
                 const success = await this.templater.applyTemplate(
-                    docId, 
-                    matchedRule.templateId, 
+                    docId,
+                    matchedRule.templateId,
                     matchedRule.destinationPath,
-                    matchedRule.icon
+                    matchedRule.icon,
+                    matchedRule.iconUrl
                 );
-                
+
                 if (success) {
                     showMessage(this.i18n.templateApplied + `${docPath}`, 3000, "info");
                 } else {
-                    showMessage(this.i18n.templateAppliedFailed + `${docPath}`, 7000, "error"); 
+                    showMessage(this.i18n.templateAppliedFailed + `${docPath}`, 7000, "error");
                 }
             }
         }
     }
-    
+
     private initSettings() {
         this.setting = new Setting({
             confirmCallback: () => {
             // Save settings if needed
             }
         });
-        
+
         // Create a container for the button
         const btnManageRules = document.createElement("button");
         btnManageRules.className = "b3-button b3-button--outline";
@@ -143,23 +147,23 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         btnManageRules.addEventListener("click", () => {
             this.openRulesDialog();
         });
-        
+
         // Create a container for the rules table
         const rulesTableContainer = document.createElement("div");
         rulesTableContainer.className = "templater-rules-table";
         rulesTableContainer.style.marginTop = "10px";
         rulesTableContainer.style.width = "100%";
-        
+
         // Create and populate the rules table
         this.updateRulesTable(rulesTableContainer);
-        
+
         // Add the button to settings
         this.setting.addItem({
             title: this.i18n.templateRules,
             description: this.i18n.ruleManagmentDescription,
             actionElement: btnManageRules,
         });
-        
+
         // Add the table as a separate item with empty title and description
         // This will position it in the main content area
         this.setting.addItem({
@@ -172,20 +176,20 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
     // Helper method to update the rules table
     private updateRulesTable(container: HTMLElement) {
         const rules = this.templater.getRules();
-        
+
         // Clear existing content
         container.innerHTML = "";
-        
+
         if (rules.length === 0) {
             container.innerHTML = `<div class='b3-label'>${this.i18n.noTemplate}</div>`;
             return;
         }
-        
+
         // Create table
         const table = document.createElement("table");
         table.className = "b3-table";
         table.style.width = "100%";
-        
+
         // Add header
         const thead = document.createElement("thead");
         thead.innerHTML = `
@@ -198,7 +202,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         </tr>
         `;
         table.appendChild(thead);
-        
+
         // Add rows
         const tbody = document.createElement("tbody");
         rules.forEach(rule => {
@@ -213,7 +217,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        
+
         container.appendChild(table);
     }
 
@@ -223,13 +227,12 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
 
     private openRulesDialog() {
         const rules = this.templater.getRules();
-        
+
         let rulesHTML = "";
         rules.forEach((rule, index) => {
             const escapedDestinationPath = (rule.destinationPath || "").replace(/"/g, "&quot;");
-            const iconValue = rule.icon || DEFAULT_ICON;
             rulesHTML += `
-            <div class="template-rule" data-index="${index}">                
+            <div class="template-rule" data-index="${index}">
                 <!-- Path Pattern and Template -->
                 <div class="fn__flex">
                     <div class="fn__flex-1">
@@ -243,7 +246,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                     </div>
                 </div>
                 <!-- Description, Destination Path and Icon -->
-                <div class="fn__flex">    
+                <div class="fn__flex">
                     <div class="fn__flex-1">
                         <div class="b3-label">${this.i18n.description}</div>
                         <input class="b3-text-field fn__block description" value="${rule.description || ""}">
@@ -255,14 +258,10 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                     </div>
                     <div class="fn__space"></div>
                     <div class="fn__flex-0">
-                    <div class="b3-label">${this.i18n.icon || "Icon"}</div>
+                        <div class="b3-label">${this.i18n.icon || "Icon"}</div>
                         <div class="fn__flex">
-                            <button class="b3-button b3-button--outline emoji-picker-btn" 
-                            data-icon="${iconValue}" 
-                            style="min-width: 60px; padding: 0 8px; height: 32px; line-height: 32px;">
-                            ${iconValue}
+                            <button class="b3-button b3-button--outline emoji-picker-btn" data-icon="">
                             </button>
-                            <input type="hidden" class="icon" value="${rule.icon || DEFAULT_ICON}">
                         </div>
                     </div>
                 </div>
@@ -298,6 +297,22 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             </div>`,
             width: "800px",
         });
+        const dialogElement = dialog.element;
+
+        dialogElement.querySelectorAll(".template-rule .emoji-picker-btn").forEach(btn => {
+            const button = btn as HTMLElement;
+            const ruleElement = button.closest(".template-rule");
+            if (ruleElement) {
+                const iconInput = ruleElement.querySelector(".icon") as HTMLInputElement;
+                if (iconInput) {
+                    this.styleIconContainerButton(button, iconInput.value);
+                }
+            }
+            // Event listener für Emoji Picker hier hinzufügen (wie gehabt)
+            button.addEventListener("click", (e) => {
+                this.showEmojiPicker(e.target as HTMLElement);
+            });
+        });
 
         // Add event listeners for emoji picker buttons
         const emojiButtons = dialog.element.querySelectorAll(".emoji-picker-btn");
@@ -312,7 +327,8 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         addRuleBtn.addEventListener("click", () => {
             const container = dialog.element.querySelector(".template-rules-container");
             const newIndex = rules.length;
-            
+
+
             // Inside the addRuleBtn.addEventListener("click", () => { ... }) function:
             const newRuleHTML = `
             <div class="template-rule" data-index="${newIndex}">
@@ -341,8 +357,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                     <div class="fn__flex-0">
                         <div class="b3-label">${this.i18n.icon || "Icon"}</div>
                             <div class="fn__flex">
-                                <button class="b3-button b3-button--outline emoji-picker-btn" data-icon="${DEFAULT_ICON}" style="min-width: 60px; padding: 0 8px; height: 32px; line-height: 32px;">${DEFAULT_ICON}</button>
-                                <input type="hidden" class="icon" value="${DEFAULT_ICON}">
+                                <button class="b3-button b3-button--outline emoji-picker-btn" data-icon="${DEFAULT_ICON}" style="width: 32px; padding: 0 8px; height: 32px; line-height: 32px;">${DEFAULT_ICON}</button>
                             </div>
                         </div>
                     </div>
@@ -360,9 +375,9 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                 const ruleElement = (e.target as HTMLElement).closest(".template-rule");
                 ruleElement.remove();
             });
-            
+
             // Add event listener to the new emoji picker button
-            const newEmojiBtn = container.querySelector(`.template-rule[data-index="${newIndex}"] .emoji-picker-btn`);
+            const newEmojiBtn = container.querySelector(`.template-rule[data-index="${newIndex}"] .emoji-picker-btn`) as HTMLElement;
             newEmojiBtn.addEventListener("click", (e) => {
                 this.showEmojiPicker(e.target as HTMLElement);
             });
@@ -382,60 +397,104 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         saveBtn.addEventListener("click", async () => {
             const ruleElements = dialog.element.querySelectorAll(".template-rule");
             const newRules: TemplateRule[] = [];
-            
+
             ruleElements.forEach(el => {
                 const pathPattern = (el.querySelector(".path-pattern") as HTMLInputElement).value;
                 const templateId = (el.querySelector(".template-id") as HTMLInputElement).value;
                 const description = (el.querySelector(".description") as HTMLInputElement).value;
                 const destinationPath = (el.querySelector(".destination-path") as HTMLInputElement).value;
-                const icon = (el.querySelector(".icon") as HTMLInputElement).value || DEFAULT_ICON;
-                        
+                
                 if (pathPattern && templateId) {
                     newRules.push({
                         pathPattern,
                         templateId,
                         description: description || undefined,
                         destinationPath: destinationPath || undefined,
-                        icon: icon
+                        icon: this.iconSVG[newRules.length],
+                        iconUrl: this.iconUrl[newRules.length],
                     });
                 }
             });
-            
+
             // Update rules
             this.templater["rules"] = newRules;
             await this.templater.saveRules();
-            
+
             // Update the rules table in settings
             const rulesTableContainer = document.querySelector(".templater-rules-table");
             if (rulesTableContainer) {
                 this.updateRulesTable(rulesTableContainer as HTMLElement);
             }
-            
+
             showMessage(this.i18n.templateRulesSaved, 3000, "info");
             dialog.destroy();
         });
-        
+
         // Cancel button
         const cancelBtn = dialog.element.querySelector(".b3-button--cancel");
         cancelBtn.addEventListener("click", () => {
             dialog.destroy();
         });
     }
-    
+
+    /**
+    * Styling Container Buttons
+    */
+    private styleIconContainerButton(buttonElement: HTMLElement, iconContent: string) {
+        buttonElement.style.width = "32px";
+        buttonElement.style.height = "32px";
+        buttonElement.style.overflow = "hidden";
+        buttonElement.style.display = "flex";
+        buttonElement.style.alignItems = "center";
+        buttonElement.style.justifyContent = "center";
+        buttonElement.style.flexShrink = "0";
+
+        if (iconContent && iconContent.trim().startsWith("<svg")) {
+            //buttonElement.innerHTML = iconContent;
+            buttonElement.style.padding = "0";  
+            buttonElement.style.lineHeight = "1"; 
+
+            const svgEl = buttonElement.querySelector("svg");
+            if (svgEl) {
+                svgEl.style.width = "100%";
+                svgEl.style.height = "100%";
+                svgEl.removeAttribute("width");
+                svgEl.removeAttribute("height");
+                if (!svgEl.hasAttribute("preserveAspectRatio")) {
+                    svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
+                }
+            }
+        } else {
+            // Für Emojis oder Text-Icons
+            buttonElement.textContent = iconContent; // Emoji als Text setzen
+            buttonElement.style.padding = "0 8px";   // Standard-Padding für Text-Icons
+            buttonElement.style.lineHeight = "32px"; // Standard-Zeilenhöhe
+        }
+    }
+
+    private escapeHtml(unsafe: string): string {
+        if (unsafe === null || unsafe === undefined) return "";
+        return unsafe
+             .replace(/&/g, "&")
+             .replace(/</g, "<")
+             .replace(/>/g, ">")
+             .replace(/"/g, '"')
+             .replace(/'/g, "'");
+    }
+
     private showEmojiPicker(buttonElement: HTMLElement) {
         const ruleElement = buttonElement.closest(".template-rule");
         if (!ruleElement) return; // Should not happen
-        const iconInput = ruleElement.querySelector(".icon") as HTMLInputElement;
-
+    
         // Access Siyuan's global emoji data
         const emojiCategories = (window as any).siyuan && (window as any).siyuan.emojis;
-
+    
         if (!emojiCategories || !Array.isArray(emojiCategories) || emojiCategories.length === 0) {
             console.error("Siyuan emoji data not found, empty, or not an array.");
             showMessage(this.i18n.emojiLoadError || "Could not load Siyuan emojis.", 3000, "error");
-            
+    
             const errorDialog = new Dialog({
-                title: this.i18n.selectEmoji || "Select Emoji",
+                title: this.i18n.selectIcon || "Select Icon",
                 content: `<div class="b3-dialog__content"><p>${this.i18n.emojiLoadError || "Could not load Siyuan emojis."}</p></div>
                           <div class="b3-dialog__action"><button class="b3-button b3-button--cancel">${this.i18n.cancel}</button></div>`,
                 width: "360px",
@@ -446,31 +505,29 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             }
             return;
         }
-
-        // Function to get localized category title
+    
         const getCategoryTitle = (category: any) => {
             const lang = (window as any).siyuan && (window as any).siyuan.config && (window as any).siyuan.config.lang;
             if (lang === "ja_JP" && category.title_ja_jp) return category.title_ja_jp;
             if (lang === "zh_CN" && category.title_zh_cn) return category.title_zh_cn;
-            return category.title || category.id; // Default to title or id
+            return category.title || category.id;
         };
-
-        // Function to convert unicode string to emoji character
+    
         const getEmojiChar = (unicode: string): string => {
             if (!unicode || typeof unicode !== "string") return "?";
             try {
                 return unicode.split("-").map(hex => String.fromCodePoint(parseInt(hex, 16))).join("");
             } catch (e) {
                 console.error(`Error converting unicode ${unicode} to char:`, e);
-                return "?"; // Fallback character
+                return "?";
             }
         };
-
+    
+        // --- EMOJI TAB HTML ---
         let emojiPickerHTML = `
             <input type="text" class="b3-text-field fn__block emoji-filter-input" placeholder="${this.i18n.filterEmoji || "Filter emojis..."}" style="margin-bottom: 8px;">
             <div class="emoji-picker-list" style="max-height: 300px; overflow-y: auto;">
         `;
-
         emojiCategories.forEach((category: any) => {
             emojiPickerHTML += `
                 <div class="emoji-category" data-category-id="${category.id}">
@@ -482,12 +539,11 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                     const char = getEmojiChar(emoji.unicode);
                     const description = emoji.description || "";
                     const keywords = emoji.keywords || "";
-                    const descriptionJaJp = emoji.description_ja_jp || ""; // Corrected property name
-                    const descriptionZhCn = emoji.description_zh_cn || ""; // Corrected property name
-
+                    const descriptionJaJp = emoji.description_ja_jp || "";
+                    const descriptionZhCn = emoji.description_zh_cn || "";
                     emojiPickerHTML += `
-                        <button class="b3-button emoji-btn" 
-                                style="min-width: 36px; height: 36px; padding: 0; font-size: 20px; background-color: var(--b3-theme-surface); color: var(--b3-theme-on-surface);" 
+                        <button class="b3-button emoji-btn"
+                                style="min-width: 36px; height: 36px; padding: 0; font-size: 20px; background-color: var(--b3-theme-surface); color: var(--b3-theme-on-surface);"
                                 data-emoji="${char}"
                                 data-description="${description.toLowerCase()}"
                                 data-keywords="${keywords.toLowerCase()}"
@@ -501,25 +557,123 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             }
             emojiPickerHTML += "</div></div>";
         });
-
         emojiPickerHTML += "</div>"; // Close emoji-picker-list
-
-        const emojiDialog = new Dialog({
-            title: this.i18n.selectEmoji || "Select Emoji",
-            content: `
-                <div class="b3-dialog__content">
+    
+        // --- DYNAMIC ICON TAB HTML ---
+        const defaultDynamicIconParams = {
+            color: "#f3a92f",
+            lang: (window as any).siyuan?.config?.lang || "en_US",
+            weekdayType: "2",
+            type: "1",
+            content: "SiYuan"
+        };
+    
+        const dynamicIconFormHTML = `
+            <div class="b3-form__item">
+                <label class="b3-label">${this.i18n.dynamicIconColor || "Color"}:</label>
+                <input type="color" id="dynamic-icon-color" class="b3-text-field" value="${defaultDynamicIconParams.color}">
+            </div>
+            <div class="b3-form__item">
+                <label class="b3-label">${this.i18n.dynamicIconLang || "Language"}:</label>
+                <select id="dynamic-icon-lang" class="b3-select">
+                    <option value="en_US" ${defaultDynamicIconParams.lang === "en_US" ? "selected" : ""}>English (US)</option>
+                    <option value="zh_CN" ${defaultDynamicIconParams.lang === "zh_CN" ? "selected" : ""}>简体中文</option>
+                    <option value="ja_JP" ${defaultDynamicIconParams.lang === "ja_JP" ? "selected" : ""}>日本語</option>
+                    <option value="de_DE" ${defaultDynamicIconParams.lang === "de_DE" ? "selected" : ""}>Deutsch</option>
+                    {/* Add more languages as needed */}
+                </select>
+            </div>
+            <div class="b3-form__item">
+                <label class="b3-label">${this.i18n.dynamicIconDate || "Date"}:</label>
+                <input type="date" id="dynamic-icon-date" class="b3-text-field" value="">
+            </div>
+            <div class="b3-form__item">
+                <label class="b3-label">${this.i18n.dynamicIconWeekdayType || "Weekday Start"}:</label>
+                <select id="dynamic-icon-weekdayType" class="b3-select">
+                    <option value="1" ${defaultDynamicIconParams.weekdayType === "1" ? "selected" : ""}>${this.i18n.weekdaySunday || "Sunday"}</option>
+                    <option value="2" ${defaultDynamicIconParams.weekdayType === "2" ? "selected" : ""}>${this.i18n.weekdayMonday || "Monday"}</option>
+                </select>
+            </div>
+            <div class="b3-form__item">
+                <label class="b3-label">${this.i18n.dynamicIconType || "Icon Type"}:</label>
+                <select id="dynamic-icon-type" class="b3-select">
+                    <option value="1" ${defaultDynamicIconParams.type === "1" ? "selected" : ""}>${this.i18n.typeDate || "Date"}</option>
+                    <option value="2" ${defaultDynamicIconParams.type === "2" ? "selected" : ""}>${this.i18n.typeWeekday || "Weekday"}</option>
+                    <option value="3" ${defaultDynamicIconParams.type === "3" ? "selected" : ""}>${this.i18n.typeCustomText || "Custom Text"}</option>
+                </select>
+            </div>
+            <div class="b3-form__item" id="dynamic-icon-content-wrapper" style="${defaultDynamicIconParams.type !== "3" ? "display: none;" : ""}">
+                <label class="b3-label">${this.i18n.dynamicIconContent || "Custom Content"}:</label>
+                <input type="text" id="dynamic-icon-content" class="b3-text-field" value="${defaultDynamicIconParams.content}">
+            </div>
+            <div class="b3-form__item">
+                <div id="dynamic-icon-preview" style="display: block; margin-top: 8px; padding: 5px; background-color: var(--b3-theme-surface-lighter); border-radius: var(--b3-border-radius-b); width: 128px; height: 128px;">
+                    <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+                        <text x="10" y="20" font-family="Arial" font-size="12" fill="black">Icon</text>
+                    </svg>
+                </div>
+            </div>
+            <div class="b3-form__item">
+                <code id="dynamic-icon-url" style="display: block; margin-top: 8px; padding: 5px; background-color: var(--b3-theme-surface-lighter); border-radius: var(--b3-border-radius-b); white-space: pre-wrap; word-break: break-all;"></code>
+            </div>
+            <div class="b3-form__item">
+                <button class="b3-button b3-button--primary fn__block" id="apply-dynamic-icon">${this.i18n.apply || "Apply"}</button>
+            </div>
+        `;
+    
+        // --- DIALOG STRUCTURE WITH TABS ---
+        const dialogContent = `
+            <div class="b3-dialog__content">
+                <div class="b3-tab-bar" style="margin-bottom: 10px;">
+                    <div class="b3-tab b3-tab--active" data-tab-id="emojis">${this.i18n.emojis || "Emojis"}</div>
+                    <div class="b3-tab" data-tab-id="dynamic">${this.i18n.dynamicIcons || "Dynamic Icons"}</div>
+                </div>
+                <div id="tab-content-emojis" class="tab-content b3-tab-content--active">
                     ${emojiPickerHTML}
                 </div>
-                <div class="b3-dialog__action">
-                    <button class="b3-button b3-button--cancel">${this.i18n.cancel}</button>
-                </div>`,
-            width: "420px", 
+                <div id="tab-content-dynamic" class="tab-content" style="display: none; max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                    ${dynamicIconFormHTML}
+                </div>
+            </div>
+            <div class="b3-dialog__action">
+                <button class="b3-button b3-button--cancel">${this.i18n.cancel}</button>
+            </div>
+        `;
+    
+        const mainDialog = new Dialog({
+            title: this.i18n.selectIcon || "Select Icon",
+            content: dialogContent,
+            width: "480px", // Adjusted width for more content
         });
-
-        const dialogElement = emojiDialog.element;
+    
+        const dialogElement = mainDialog.element;
+    
+        // --- TAB SWITCHING LOGIC ---
+        const tabs = dialogElement.querySelectorAll(".b3-tab");
+        const tabContents = dialogElement.querySelectorAll(".tab-content");
+        tabs.forEach(tab => {
+            tab.addEventListener("click", () => {
+                tabs.forEach(t => t.classList.remove("b3-tab--active"));
+                tab.classList.add("b3-tab--active");
+    
+                const tabId = tab.getAttribute("data-tab-id");
+                tabContents.forEach(content => {
+                    const contentEl = content as HTMLElement;
+                    if (contentEl.id === `tab-content-${tabId}`) {
+                        contentEl.style.display = "";
+                        contentEl.classList.add("b3-tab-content--active"); // If Siyuan uses this for styling
+                    } else {
+                        contentEl.style.display = "none";
+                        contentEl.classList.remove("b3-tab-content--active");
+                    }
+                });
+            });
+        });
+    
+        // --- EMOJI TAB LOGIC ---
         const filterInput = dialogElement.querySelector(".emoji-filter-input") as HTMLInputElement;
         const emojiCategoriesElements = dialogElement.querySelectorAll(".emoji-category");
-
+    
         if (filterInput) {
             filterInput.addEventListener("input", () => {
                 const filterText = filterInput.value.toLowerCase().trim();
@@ -532,13 +686,13 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                         const keywords = button.dataset.keywords || "";
                         const descJaJp = button.dataset.descriptionJaJp || "";
                         const descZhCn = button.dataset.descriptionZhCn || "";
-                        
-                        const isMatch = filterText === "" || 
-                                        desc.includes(filterText) || 
+    
+                        const isMatch = filterText === "" ||
+                                        desc.includes(filterText) ||
                                         keywords.includes(filterText) ||
                                         descJaJp.includes(filterText) ||
                                         descZhCn.includes(filterText);
-                        
+    
                         button.style.display = isMatch ? "" : "none";
                         if (isMatch) {
                             categoryHasVisibleEmojis = true;
@@ -548,25 +702,102 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                 });
             });
         }
-
+    
         const emojiButtons = dialogElement.querySelectorAll(".emoji-btn");
         emojiButtons.forEach(btn => {
             btn.addEventListener("click", () => {
                 const emoji = btn.getAttribute("data-emoji");
                 if (emoji) {
-                    iconInput.value = emoji;
+                    this.iconSVG.push(emoji);
+                    this.iconUrl.push("");
                     buttonElement.textContent = emoji;
                     buttonElement.setAttribute("data-icon", emoji);
-                    emojiDialog.destroy();
+                    mainDialog.destroy();
                 }
             });
         });
+    
+        // --- DYNAMIC ICON TAB LOGIC ---
+        const dynamicColorInput = dialogElement.querySelector("#dynamic-icon-color") as HTMLInputElement;
+        const dynamicLangSelect = dialogElement.querySelector("#dynamic-icon-lang") as HTMLSelectElement;
+        const dynamicDateInput = dialogElement.querySelector("#dynamic-icon-date") as HTMLInputElement;
+        const dynamicWeekdayTypeSelect = dialogElement.querySelector("#dynamic-icon-weekdayType") as HTMLSelectElement;
+        const dynamicTypeSelect = dialogElement.querySelector("#dynamic-icon-type") as HTMLSelectElement;
+        const dynamicContentInput = dialogElement.querySelector("#dynamic-icon-content") as HTMLInputElement;
+        const dynamicContentWrapper = dialogElement.querySelector("#dynamic-icon-content-wrapper") as HTMLElement;
+        const applyDynamicIconButton = dialogElement.querySelector("#apply-dynamic-icon") as HTMLButtonElement;
+        const dynamicIconPreview = dialogElement.querySelector("#dynamic-icon-preview") as HTMLElement;
+        const dynamicIconUrl = dialogElement.querySelector("#dynamic-icon-url") as HTMLElement;
+        let color: string;
+        let lang: string;
+        let date: string;
+        let weekdayType: string;
+        let content: string;
+        let type: string;
+    
+        const updateDynamicIconPreview = async () => {
+            color = dynamicColorInput.value || "";
+            lang = dynamicLangSelect.value || "";
+            type = dynamicTypeSelect.value || "";
+            date = dynamicDateInput.value || "";
+            weekdayType = dynamicWeekdayTypeSelect.value || "";
+            content = dynamicContentInput.value || "";
+    
+            // Show/hide content input based on type
+            if (dynamicContentWrapper) {
+                dynamicContentWrapper.style.display = type === "3" ? "" : "none";
+            }
+    
+            // Generate the dynamic icon URL
+            const dynamicIconUrlValue = getDynamicIconUrl(color, lang, date, weekdayType, type, content);
+            if (dynamicIconUrlValue) {
+                dynamicIconUrl.textContent = dynamicIconUrlValue;
+                const dynamicIcon = await getDynamicIcon(dynamicIconUrlValue);
+                if (dynamicIcon) {
+                    dynamicIconPreview.innerHTML = dynamicIcon;
+                }
+            }
+        };
+    
+        [dynamicColorInput, dynamicLangSelect, dynamicDateInput, dynamicWeekdayTypeSelect, dynamicTypeSelect, dynamicContentInput].forEach(el => {
+            if (el) el.addEventListener("input", updateDynamicIconPreview);
+            if (el && el.tagName === "SELECT") el.addEventListener("change", updateDynamicIconPreview);
+        });
+        updateDynamicIconPreview(); // Initial preview
+    
+        if (applyDynamicIconButton) {
+            applyDynamicIconButton.addEventListener("click", async () => {
+                const dynamicIconUrlValue = getDynamicIconUrl(color, lang, date, weekdayType, type, content);
+                if (dynamicIconUrlValue) {
+                    const dynamicIconSVG = await getDynamicIcon(dynamicIconUrlValue);
+                    dynamicIconPreview.textContent = dynamicIconSVG;
 
+                    this.iconSVG = [dynamicIconSVG];
+                    this.iconUrl = [dynamicIconUrlValue];
+
+                    buttonElement.textContent = "DI";
+                    buttonElement.setAttribute("data-icon", dynamicIconSVG);
+
+                    if (dynamicIconSVG && dynamicIconSVG.trim().startsWith("<svg")) {
+                        buttonElement.innerHTML = dynamicIconSVG;
+                        // Ggf. Styling anpassen, falls das SVG zu groß ist
+                        // buttonElement.style.padding = "0";
+                    } else {
+                        buttonElement.textContent = "DI";
+                    }
+                    buttonElement.setAttribute("data-icon", dynamicIconSVG);
+
+                    mainDialog.destroy();
+                }
+            });
+        }
+    
+        // --- CANCEL BUTTON ---
         const cancelBtn = dialogElement.querySelector(".b3-button--cancel");
         if (cancelBtn) {
             cancelBtn.addEventListener("click", () => {
-                emojiDialog.destroy();
+                mainDialog.destroy();
             });
         }
-    }
+    }    
 }
