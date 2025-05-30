@@ -41,14 +41,14 @@ npm run build
 >“/Meeting/{{now | date ”2006/01“}}/Meeting {{now | date ”2006-01-02“}} 在文件夹 ”/Meeting/20xx/xx/“中创建一个新文档，名称为 ”Meeting 20xx-xx-xx"（今天的日期）。
 
 #### 扩展函数
-要使用模板函数，您必须在 {{.templater function1 function2 function3 ...}}之间引入函数。
+要使用模板函数，您必须将函数置于 <%function1 function2 function3 ...%> 之间。字符串“<%”必须位于行首，“%>”必须位于行尾。
 
 可用函数
 1. 自定义属性
 您可以使用 [Sprig-Functions](https://masterminds.github.io/sprig/date.html?utm_source=liuyun.io) 设置自定义属性。
 
 #### 示例
-- 使用以下格式为每日笔记设置自定义属性： {{.templater custom-dailynote-{{now | date "20060102"}}={{now | date "2006-01-02"}}}}
+- 使用格式为每日笔记设置自定义属性： <%custom-dailynote-{{now | date "20060102"}}={{now | date "2006-01-02"}}%>
 
 ## 可用语言
 - 英语

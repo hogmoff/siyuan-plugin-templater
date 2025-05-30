@@ -1,15 +1,26 @@
-import { renderSprig, setCustomAttr } from "./api";
+import { renderSprig, setCustomAttr, getChildBlocks, deleteBlock } from "./api";
 
-export async function applyTemplaterFunctions(docId: string, content:string): Promise<boolean> {
+export async function applyTemplaterFunctions(docId: string): Promise<boolean> {
     try {
-        const functions = getTemplaterFunctions(content);
-        for (const func of functions) {
-            // Custom Attributes
-            const customAttributes = await getCustomAttr(func);
-            if (customAttributes) {
-                await setCustomAttr(docId, customAttributes);
+        const blocks = await getChildBlocks(docId);        
+        if (!blocks || !blocks.data || blocks.data.length === 0) {
+            // no blocks found, returning false
+            return false;
+        }   
+        const data = blocks.data;   
+        const functionBlocks = data.filter((item: { markdown: string | string[]; }) => item.markdown.includes("<%") && item.markdown.includes("%>"));
+        for (const funcBl of functionBlocks) {
+            const functions = replaceAndSplit(funcBl.markdown);
+            for (const func of functions) {
+                // Custom Attributes
+                const customAttributes = await getCustomAttr(func);
+                if (customAttributes) {
+                    await setCustomAttr(docId, customAttributes);
+                }
+                // other Functions...
             }
-            // Other possible Functions ...
+            // delete block
+            await deleteBlock(funcBl.id);
         }
         return true;
     }
@@ -19,17 +30,25 @@ export async function applyTemplaterFunctions(docId: string, content:string): Pr
     }
 }
 
-export function getTemplaterFunctions(content: string): string[] {
-    const rows = content.split("\n")
-        .filter((row: string) => row.trim().startsWith("{{.templater"))
-        .map((row: string) => {
-            // Remove {{.templater and }} from row
-            const start = row.indexOf("{{.templater") + "{{.templater".length;
-            const end = row.lastIndexOf("}}");
-            return row.substring(start, end).trim();
-        });
+export function replaceAndSplit(content: string): string[] {
+    // Ignore spaces within {{ and }}
+    const ignoreSpacesInCurlyBraces = content.replace(/\{\{(.*?)\}\}/g, match =>
+        match.replace(/ /g, "___SPACE___")
+    );
 
-    return rows;
+    // Ignore spaces within double quotes
+    const ignoreSpacesInQuotes = ignoreSpacesInCurlyBraces.replace(/"(.*?)"/g, match =>
+        match.replace(/ /g, "___SPACE___")
+    );
+
+    // Replace '<%' and '%>' with empty string
+    const replaceAngleBrackets = ignoreSpacesInQuotes.replace(/<%|%>/g, "");
+
+    // Split the string by spaces
+    const splitBySpaces = replaceAngleBrackets.split(" ");
+
+    // Replace the temporary placeholder back to spaces within the previously identified {{ and }} sections and quotes
+    return splitBySpaces.map(item => item.replace(/___SPACE___/g, " "));
 }
 
 export async function getCustomAttr(content: string){
@@ -40,7 +59,7 @@ export async function getCustomAttr(content: string){
             if (key && value) {   
                 const formattedKey = await renderSprig(key);
                 const formattedValue = await renderSprig(value);         
-                attrs[formattedKey] = formattedValue;
+                attrs[formattedKey] = formattedValue.replace(/"/g, "");
             }
             return attrs;
         }

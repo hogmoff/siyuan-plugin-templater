@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.5.0 2025-05-29
+- Add extended functions to create custom attributes
+
 ## v0.4.1 2025-5-29
 - Bugfix filetree not scrollable
 

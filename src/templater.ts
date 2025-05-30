@@ -255,14 +255,6 @@ export class Templater {
                 }
             } 
             
-            // Read Template File for extended use
-            const templateContent = await getRawFile(templateId);
-            console.log(templateContent);
-            if (!templateContent) {
-                console.error("Failed to read Template:", templateId);
-                return false;
-            }
-            
             // Rename the document
             const responseRename = await renameDocbyId(docId, newName);
             if (!responseRename) {
@@ -271,9 +263,9 @@ export class Templater {
             }    
             
             // Get first BlockId
-            const firstBlock = await getChildBlocks(docId);
-            if (!firstBlock || !firstBlock.data) {
-                console.error("Failed to get first block:", firstBlock);
+            const firstBlocks = await getChildBlocks(docId);
+            if (!firstBlocks || !firstBlocks.data) {
+                console.error("Failed to get blocks:", firstBlocks);
                 return false;
             }
             
@@ -286,14 +278,14 @@ export class Templater {
             }
             
             // Now insert the rendered content into the document before first block
-            const insertResponse = await insertBlock("", firstBlock.data[0].id, "", renderResponse.content);    
+            const insertResponse = await insertBlock("", firstBlocks.data[0].id, "", renderResponse.content);    
             if (!insertResponse || insertResponse.code !== 0) {
                 console.error("Failed to insert block: ", insertResponse);
                 return false;
             }
             
             // delete first block (empty)
-            const deleteResponse = await deleteBlock(firstBlock.data[0].id);
+            const deleteResponse = await deleteBlock(firstBlocks.data[0].id);
             if (!deleteResponse || deleteResponse.code !== 0) {
                 console.error("Failed to delete block: ", deleteResponse);
                 return false;
@@ -303,15 +295,15 @@ export class Templater {
             await new Promise(resolve => setTimeout(resolve, 200));
             const notebookId = await getNotebookIdByDocId(docId);
     
-            // Create Folder if not exist
-            const ids = await getIDsByHPath(notebookId, newPath);
-            let newPathDocId = null;
-            if (!ids || ids.length === 0) {
-                newPathDocId = await createDocWithMd(notebookId, newPath, "");
-            }    
-    
-            // Move document to destination path if specified
             if (newPath.length > 0) {    
+                // Create Folder if not exist
+                const ids = await getIDsByHPath(notebookId, newPath);
+                let newPathDocId = null;
+                if (!ids || ids.length === 0) {
+                    newPathDocId = await createDocWithMd(notebookId, newPath, "");
+                }    
+        
+                // Move document to destination path if specified            
                 const moveResponse = await moveDocbyId(docId, newPath, notebookId, newPathDocId);
                 if (!moveResponse || moveResponse.code !== 0) {
                     console.error("Failed to move document to destination path:", moveResponse);
@@ -327,7 +319,7 @@ export class Templater {
             }
 
             // Apply Templater Functions
-            await applyTemplaterFunctions(docId, templateContent);
+            await applyTemplaterFunctions(docId);
             
             return true;
         } catch (error) {

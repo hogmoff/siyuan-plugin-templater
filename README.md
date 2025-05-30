@@ -41,14 +41,14 @@ If field is empty then document will be created on current path and ask for docu
 > "/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-02"}} creates a new document in folder "/Meeting/20xx/xx/" with name "Meeting 20xx-xx-xx" (today date) 
 
 ### Extended Functions
-To use the templater functions you have to bring the functions between {{.templater function1 function2 function3 ...}}
+To use the templater functions you have to bring the functions between <%function1 function2 function3 ...%>. The string '<%' must be at beginning of the row and '%>' at the end of the row.
 
 Available functions:
 1. Custom Attributes
 You can set custom attributes with the ability to use [Sprig-Functions](https://masterminds.github.io/sprig/date.html?utm_source=liuyun.io). 
 
 #### Examples
-- Set custom attributes for daily notes using the format: {{.templater custom-dailynote-{{now | date "20060102"}}={{now | date "2006-01-02"}}}}
+- Set custom attributes for daily notes using the format: <%custom-dailynote-{{now | date "20060102"}}={{now | date "2006-01-02"}}%>
 
 ## Available Languages
 - English
