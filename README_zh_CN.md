@@ -5,7 +5,7 @@
 ![Preview](preview.png)
 
 ## 概述
-该插件用于处理创建路径中的模板依赖关系。
+该插件管理对创建路径所依赖模板的处理，设置图标并提供扩展功能。
 
 ## 功能
 - 在设置中管理规则
@@ -14,6 +14,7 @@
 - 将文件移至特定文件夹（支持日期格式模板变量，如/Meeting/{{now | date “2006/01”}}/{{now | date “2006-01-02”}})
 - 用 Emoji-Picker 为模板设置图标
 - 设置动态图标
+- 设置自定义属性的功能
 
 ## 安装
 要安装插件，请从思源插件市场下载，或克隆源并将其添加到您的思源插件文件夹中。
@@ -38,6 +39,16 @@ npm run build
 
 #### 示例
 >“/Meeting/{{now | date ”2006/01“}}/Meeting {{now | date ”2006-01-02“}} 在文件夹 ”/Meeting/20xx/xx/“中创建一个新文档，名称为 ”Meeting 20xx-xx-xx"（今天的日期）。
+
+#### 扩展函数
+要使用模板函数，您必须在 {{.templater function1 function2 function3 ...}}之间引入函数。
+
+可用函数
+1. 自定义属性
+您可以使用 [Sprig-Functions](https://masterminds.github.io/sprig/date.html?utm_source=liuyun.io) 设置自定义属性。
+
+#### 示例
+- 使用以下格式为每日笔记设置自定义属性： {{.templater custom-dailynote-{{now | date "20060102"}}={{now | date "2006-01-02"}}}}
 
 ## 可用语言
 - 英语

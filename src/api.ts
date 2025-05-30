@@ -1,10 +1,4 @@
-import { IWebSocketData, IObject, fetchGet, fetchSyncPost } from "siyuan";
-
-// async function request(url: string, data: any) {
-//     const response: IWebSocketData = await fetchSyncPost(url, data);
-//     const res = response.code === 0 ? response.data : null;
-//     return res;
-// }
+import { IWebSocketData, IObject, fetchGet,fetchPost, fetchSyncPost } from "siyuan";
 
 export async function getWorkspaceDir(): Promise<any> {
     const data = {};
@@ -33,6 +27,43 @@ export async function getNotebookIdByDocId(docId: string): Promise<any> {
         return notebook.data[0].box;
     } catch (error_msg) {
         console.error(error_msg);
+        return null;
+    }
+}
+
+export async function getFile(path: string): Promise<any> {
+    const data = {
+        path: path,
+    };
+    const url = "/api/file/getFile";
+    try {
+        const file = await fetchSyncPost(url, data);
+        return file;
+    } catch (error_msg) {
+        console.error("Error fetching file:", error_msg);
+        return null;
+    }
+}
+
+export async function getRawFile(path: string): Promise<any> {
+    const data = {
+        path: path,
+    };
+    const url = "/api/file/getFile";
+    try {
+        const fileData = await new Promise<string | null>((resolve, reject) => {
+            fetchPost(url, data, (responseData: IWebSocketData | IObject | string) => {
+                if (typeof responseData === "string") {
+                    resolve(responseData);
+                } else {
+                    console.warn(`Dynamic icon API returned non-string data. Type: ${typeof responseData}`, responseData);
+                    resolve(null);
+                }
+            });
+        });
+        return fileData;
+    } catch (error_msg) {
+        console.error("Error fetching file:", error_msg);
         return null;
     }
 }
@@ -96,19 +127,6 @@ export async function moveDocbyId(docId: string, newPath: string, notebookId: st
         toID: toPath[0]
     };
     const url = "/api/filetree/moveDocsByID";
-    try {
-        const file = await fetchSyncPost(url, data);
-        return file;
-    } catch (error_msg) {
-        return null;
-    }
-}
-
-export async function getFile(path: string): Promise<any> {
-    const data = {
-        path: path
-    };
-    const url = "/api/file/getFile";
     try {
         const file = await fetchSyncPost(url, data);
         return file;
@@ -276,6 +294,19 @@ export async function setIcon(docId: string, icon: string, iconUrl: string): Pro
         return file;
     } catch (error_msg) {
         return null;
+    }
+}
+
+export async function setCustomAttr(docId: string, customAttributes: Record<string, string>): Promise<any> {
+    if (customAttributes) {        
+        const data = { id: docId, attrs: customAttributes };
+        const url = "/api/attr/setBlockAttrs";
+        try {
+            const file = await fetchSyncPost(url, data);
+            return file;
+        } catch (error_msg) {
+            return null;
+        }
     }
 }
 

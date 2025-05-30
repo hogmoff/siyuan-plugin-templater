@@ -1,6 +1,7 @@
 import { Dialog, IObject } from "siyuan";
 import { 
     getFile, 
+    getRawFile,
     getWorkspaceDir, 
     getNotebookIdByDocId, 
     createDocWithMd,
@@ -15,6 +16,7 @@ import {
     deleteBlock,
     renderSprig
 } from "./api";
+import { applyTemplaterFunctions } from "./extendedFunctions";
 
 export interface TemplateRule {
     pathPattern: string;  // Regex pattern to match document paths
@@ -251,12 +253,20 @@ export class Templater {
                     newName = sprigPath;
                     newPath = "";
                 }
-            }    
+            } 
+            
+            // Read Template File for extended use
+            const templateContent = await getRawFile(templateId);
+            console.log(templateContent);
+            if (!templateContent) {
+                console.error("Failed to read Template:", templateId);
+                return false;
+            }
             
             // Rename the document
             const responseRename = await renameDocbyId(docId, newName);
             if (!responseRename) {
-                console.error("Failed to rename document:", responseRename);
+                console.error("Failed to rename document:", docId);
                 return false;
             }    
             
@@ -315,6 +325,9 @@ export class Templater {
                     console.error("Failed to set document icon:", iconResponse);
                 }
             }
+
+            // Apply Templater Functions
+            await applyTemplaterFunctions(docId, templateContent);
             
             return true;
         } catch (error) {
