@@ -57,6 +57,9 @@ npm run build
 
 如果要添加或编辑语言文件，请向项目添加英文拉取请求。
 
+## 問題
+如果您發現問題，請在專案中的 https://github.com/hogmoff/siyuan-plugin-templater/issues 下新增一個只有英文版本的問題。
+
 ## 限制
 - 笔记本之间无差异。
 - 仅在桌面版和网页版中测试。

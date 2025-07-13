@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.5.1 2025-07-13
+- Bugfix graphical issue in config settings
+
 ## v0.5.0 2025-05-29
 - Add extended functions to create custom attributes
 

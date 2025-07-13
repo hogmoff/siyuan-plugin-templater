@@ -1,7 +1,6 @@
 import { Dialog, IObject } from "siyuan";
 import { 
     getFile, 
-    getRawFile,
     getWorkspaceDir, 
     getNotebookIdByDocId, 
     createDocWithMd,

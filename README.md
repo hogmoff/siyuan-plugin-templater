@@ -57,6 +57,9 @@ You can set custom attributes with the ability to use [Sprig-Functions](https://
 
 If you want add or edit the Language file, add a pull request in English to the project.
 
+## Issues
+If you find an issue, add an issue only in English in the project under [Github issue](https://github.com/hogmoff/siyuan-plugin-templater/issues)
+
 ## Limitations
 - No differentation between notebooks.
 - Tested only in Desktop and Web Version.

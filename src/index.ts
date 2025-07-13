@@ -293,6 +293,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             </div>
             <div class="b3-dialog__action">
                 <button class="b3-button b3-button--add">${this.i18n.add}</button>
+                <div class="fn__space"></div>
                 <button class="b3-button b3-button--cancel">${this.i18n.cancel}</button>
                 <div class="fn__space"></div>
                 <button class="b3-button b3-button--saveDialog">${this.i18n.save}</button>
@@ -359,6 +360,50 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             this.iconUrl.push("");
 
             const newRuleHTML = `
+            <div class="template-rule" data-index="${newIndexInUI}">
+                <!-- Path Pattern and Template -->
+                <div class="fn__flex">
+                    <div class="fn__flex-1">
+                        <div class="b3-label">${this.i18n.pathPattern}</div>
+                        <input class="b3-text-field fn__block path-pattern" value="">
+                    </div>
+                    <div class="fn__space"></div>
+                    <div class="fn__flex-1">
+                        <div class="b3-label">${this.i18n.template}</div>
+                        <input class="b3-text-field fn__block template-id" value="">
+                    </div>
+                </div>
+                <!-- Description, Destination Path and Icon -->
+                <div class="fn__flex">
+                    <div class="fn__flex-1">
+                        <div class="b3-label">${this.i18n.description}</div>
+                        <input class="b3-text-field fn__block description" value="">
+                    </div>
+                    <div class="fn__space"></div>
+                    <div class="fn__flex-1">
+                        <div class="b3-label">${this.i18n.destinationPath}</div>
+                        <input class="b3-text-field fn__block destination-path" value="">
+                    </div>
+                    <div class="fn__space"></div>
+                    <div class="fn__flex-0">
+                        <div class="b3-label">${this.i18n.icon || "Icon"}</div>
+                        <div class="fn__flex">
+                            <button class="b3-button b3-button--outline emoji-picker-btn" data-icon="${this.escapeHtml(DEFAULT_ICON)}">
+                                {/* Button content will be set by styleIconContainerButton */}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Remove Button -->
+                <div class="fn__flex" style="margin-top: 8px;">
+                    <div class="fn__flex-1"></div>
+                    <button class="b3-button b3-button--remove remove-rule">
+                        ${this.i18n.remove}
+                    </button>
+                </div>
+                <div class="fn__hr"></div>
+            </div>`;
+            const newRuleHTML2 = `
             <div class="template-rule" data-index="${newIndexInUI}">
                 <div class="fn__flex">
                     <div class="fn__flex-1">
