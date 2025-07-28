@@ -6,7 +6,7 @@ import {
 } from "siyuan";
 import "./index.scss";
 import { Templater, TemplateRule, getDocumentPathById, DEFAULT_ICON } from "./templater";
-import { getDynamicIconUrl, getDynamicIcon } from "./api";
+import { getDynamicIconUrl, getDynamicIcon, getNotebookNameById } from "./api";
 
 export default class TemplaterPlugin extends Plugin {
     private templater: Templater;
@@ -91,6 +91,12 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             return;
         }
 
+        // Get Notebook ID
+        const notebookId = detail.protyle.notebookId;
+        if (!notebookId) {
+            return;
+        }
+
         // Skip if we've already processed this document
         if (this.processedDocuments.has(docId)) {
             return;
@@ -109,8 +115,20 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             const docPath = detail.protyle.path;
             const HdocPath = await getDocumentPathById(docId);
 
+            // Get the human-readable name of the notebook to allow notebook-specific rules
+            const notebookName = await getNotebookNameById(notebookId);
+            if (!notebookName) {
+                console.error("Could not determine notebook name for new document.");
+                return;
+            }
+
+            // Combine notebook name and document path for matching.
+            // HdocPath is either empty (for root docs) or starts with a "/".
+            const fullPathForMatching = `${notebookName}${HdocPath}`;
+
             // Find matching template
-            const matchedRule = this.templater.findTemplateForPath(HdocPath);
+            const matchedRule = this.templater.findTemplateForPath(fullPathForMatching);
+
             if (matchedRule) {
                 // Add to processed list first to prevent double processing
                 this.processedDocuments.add(docId);
@@ -338,6 +356,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                     const iconValue = this.iconSVG[index];
                     this.styleIconContainerButton(button, iconValue);
                 }
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 button.addEventListener("click", (e) => {
                     this.showEmojiPicker(button);
                 });
@@ -400,45 +419,6 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                     <button class="b3-button b3-button--remove remove-rule">
                         ${this.i18n.remove}
                     </button>
-                </div>
-                <div class="fn__hr"></div>
-            </div>`;
-            const newRuleHTML2 = `
-            <div class="template-rule" data-index="${newIndexInUI}">
-                <div class="fn__flex">
-                    <div class="fn__flex-1">
-                        <div class="b3-label">${this.i18n.pathPattern}</div>
-                        <input class="b3-text-field fn__block path-pattern" value="" title="" style="width: 100%; text-overflow: ellipsis;">
-                    </div>
-                    <div class="fn__space"></div>
-                    <div class="fn__flex-1">
-                        <div class="b3-label">${this.i18n.template}</div>
-                        <input class="b3-text-field fn__block template-id" value="" title="" style="width: 100%; text-overflow: ellipsis;">
-                    </div>
-                </div>
-                <div class="fn__flex">
-                    <div class="fn__flex-1">
-                        <div class="b3-label">${this.i18n.description}</div>
-                        <input class="b3-text-field fn__block description" value="" style="width: 100%; text-overflow: ellipsis;>
-                    </div>
-                    <div class="fn__space"></div>
-                    <div class="fn__flex-1">
-                        <div class="b3-label">${this.i18n.destinationPath || "Destination Path"}</div>
-                        <input class="b3-text-field fn__block destination-path" value="" style="width: 100%; text-overflow: ellipsis;>
-                    </div>
-                    <div class="fn__space"></div>
-                    <div class="fn__flex-0">
-                        <div class="b3-label">${this.i18n.icon || "Icon"}</div>
-                        <div class="fn__flex">
-                            <button class="b3-button b3-button--outline emoji-picker-btn" data-icon="${this.escapeHtml(DEFAULT_ICON)}">
-                                {/* Content will be set by styleIconContainerButton */}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="fn__flex" style="margin-top: 8px;">
-                    <div class="fn__flex-1"></div>
-                    <button class="b3-button b3-button--outline remove-rule">${this.i18n.remove}</button>
                 </div>
                 <div class="fn__hr"></div>
             </div>`;

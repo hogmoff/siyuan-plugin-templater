@@ -9,7 +9,7 @@ The Plugin manage handling of templates dependend from the created path, set Ico
 
 ## Features
 - Manage rules in Settings
-- Dependend from the path as regex apply a different template
+- Dependend from notebook and the path as regex applies a different template
 - Support any markdown-template in the template folder of the workspace
 - Move file to specific folder (support date format template variables, such as /Meeting/{{now | date "2006/01"}}/{{now | date "2006-01-02"}})
 - Set Icon for Templates with Emoji-Picker
@@ -37,8 +37,10 @@ Set the Template path relative to workspace (e.g. data/templates/example.md)
 Set the Save Path if you need a specific target location for the rendered template. 
 If field is empty then document will be created on current path and ask for document name. Save Path support date format template variables from daily notes. Not existing paths are created.
 
-#### Example 
-> "/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-02"}} creates a new document in folder "/Meeting/20xx/xx/" with name "Meeting 20xx-xx-xx" (today date) 
+#### Examples
+1. > "/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-02"}} creates a new document in folder "/Meeting/20xx/xx/" with name "Meeting 20xx-xx-xx" (today date) in any notebooks
+
+2. > "notebook1/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-02"}}" creates a new document in folder "/Meeting/20xx/xx/" with name "Meeting 20xx-xx-xx" (today's date) in notebook with name "notebook1"
 
 ### Extended Functions
 To use the templater functions you have to bring the functions between <%function1 function2 function3 ...%>. The string '<%' must be at beginning of the row and '%>' at the end of the row.
@@ -61,7 +63,6 @@ If you want add or edit the Language file, add a pull request in English to the 
 If you find an issue, add an issue only in English in the project under [Github issue](https://github.com/hogmoff/siyuan-plugin-templater/issues)
 
 ## Limitations
-- No differentation between notebooks.
 - Tested only in Desktop and Web Version.
 - Compatibility may vary depending on the Siyuan version.
 
