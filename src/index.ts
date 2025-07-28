@@ -305,7 +305,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             title: this.i18n.templateRules,
             content: `
             <div class="b3-dialog__content">
-                <div class="template-rules-container">
+                <div class="template-rules-container" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;">
                     ${rulesHTML}
                 </div>
             </div>

@@ -2,6 +2,7 @@
 
 ## v0.6.0 2025-07-28
 - Add Notebook support for regex-based template application
+- Limit modal height to improve usability
 
 ## v0.5.1 2025-07-13
 - Bugfix graphical issue in config settings
