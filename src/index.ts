@@ -15,6 +15,9 @@ export default class TemplaterPlugin extends Plugin {
     private pluginPath: string;
     private iconSVG: string[] = [];
     private iconUrl: string[] = [];
+    private hotkeyMap: Map<string, TemplateRule> = new Map();
+    private currentNotebookId: string | null = null;
+    private hotkeyListener?: (e: KeyboardEvent) => void;
 
     async onload() {
         this.templater = new Templater(this.name, this.i18n);
@@ -67,6 +70,9 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         // Initialize settings
         this.initSettings();
 
+        // Register hotkeys after settings/rules are ready
+        this.registerHotkeys();
+
         console.log("Templater plugin loaded");
     }
 
@@ -96,6 +102,9 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         if (!notebookId) {
             return;
         }
+
+        // Track current notebook for hotkey-triggered creations
+        this.currentNotebookId = notebookId;
 
         // Skip if we've already processed this document
         if (this.processedDocuments.has(docId)) {
@@ -203,10 +212,18 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             return;
         }
 
+        // Ensure horizontal scroll is available and content not truncated
+        container.style.display = "block";
+        container.style.maxWidth = "100%";
+        container.style.overflowX = "auto";
+
         // Create table
         const table = document.createElement("table");
         table.className = "b3-table";
         table.style.width = "100%";
+        table.style.minWidth = "0";
+        table.style.tableLayout = "auto";
+        table.style.borderCollapse = "collapse";
 
         // Add header
         const thead = document.createElement("thead");
@@ -217,8 +234,19 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             <th>${this.i18n.template}</th>
             <th>${this.i18n.destinationPath || "Destination Path"}</th>
             <th>${this.i18n.icon || "Icon"}</th>
+            <th>${this.i18n.hotkey || "Hotkey"}</th>
         </tr>
         `;
+        // Allow wrapping in headers and align left
+        const tmpHead = document.createElement("div");
+        tmpHead.appendChild(thead);
+        thead.querySelectorAll("th").forEach((th: any) => {
+            (th as HTMLElement).style.whiteSpace = "normal";
+            (th as HTMLElement).style.overflow = "visible";
+            (th as HTMLElement).style.textOverflow = "clip";
+            (th as HTMLElement).style.textAlign = "left";
+            (th as HTMLElement).style.border = "1px solid var(--b3-border-color)";
+        });
         table.appendChild(thead);
 
         // Add rows
@@ -231,12 +259,130 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             <td>${rule.templateId}</td>
             <td>${rule.destinationPath || ""}</td>
             <td>${rule.icon || ""}</td>
+            <td>${rule.hotkey || ""}</td>
             `;
             tbody.appendChild(tr);
         });
         table.appendChild(tbody);
 
+        // Allow wrapping in all cells
+        table.querySelectorAll("td, th").forEach((cell) => {
+            const el = cell as HTMLElement;
+            el.style.whiteSpace = "normal";
+            el.style.wordBreak = "break-word";
+            (el.style as any)["overflow-wrap"] = "anywhere";
+            el.style.overflow = "visible";
+            el.style.textOverflow = "clip";
+            el.style.maxWidth = "none";
+            el.style.textAlign = "left";
+            el.style.border = "1px solid var(--b3-border-color)";
+        });
+
         container.appendChild(table);
+
+        // After attaching to DOM, measure max text width per column (unwrapped) and set capped widths via colgroup
+        try {
+            const headerRow = table.querySelector('thead tr');
+            const headerCells = headerRow ? Array.from(headerRow.children) as HTMLElement[] : [];
+            const bodyRows = Array.from(table.querySelectorAll('tbody tr')) as HTMLTableRowElement[];
+            const colCount = headerCells.length;
+            if (colCount > 0) {
+                const measureText = (el: HTMLElement): number => {
+                    const span = document.createElement('span');
+                    span.style.position = 'absolute';
+                    span.style.visibility = 'hidden';
+                    span.style.whiteSpace = 'nowrap';
+                    span.style.font = getComputedStyle(el).font;
+                    span.textContent = el.textContent || '';
+                    document.body.appendChild(span);
+                    const width = Math.ceil(span.getBoundingClientRect().width);
+                    document.body.removeChild(span);
+                    return width;
+                };
+                const paddingBorder = 24 + 2; // approx left+right padding + borders
+                const MAX_COL_WIDTH = 420; // px cap per column
+                const colWidths: number[] = new Array(colCount).fill(0);
+
+                // include headers
+                headerCells.forEach((cell, idx) => {
+                    colWidths[idx] = Math.max(colWidths[idx], measureText(cell) + paddingBorder);
+                });
+                // include body cells
+                bodyRows.forEach(row => {
+                    const cells = Array.from(row.children) as HTMLElement[];
+                    for (let i = 0; i < Math.min(cells.length, colCount); i++) {
+                        colWidths[i] = Math.max(colWidths[i], measureText(cells[i]) + paddingBorder);
+                    }
+                });
+
+                // Cap to max
+                const buffered = colWidths.map(w => Math.min(MAX_COL_WIDTH, Math.max(60, w)));
+                const total = buffered.reduce((a, b) => a + b, 0);
+                // create colgroup
+                const cg = document.createElement('colgroup');
+                buffered.forEach(w => {
+                    const col = document.createElement('col');
+                    (col as HTMLElement).style.width = `${w}px`;
+                    cg.appendChild(col);
+                });
+                table.insertBefore(cg, table.firstChild);
+                table.style.tableLayout = 'fixed';
+                table.style.minWidth = `${total}px`;
+            }
+        } catch (e) {
+            console.warn('Failed to compute dynamic column widths', e);
+        }
+
+        // Limit the maximum visual height of table body rows
+        const MAX_ROW_PX = 60; // adjust as desired
+        const bodyCells = table.querySelectorAll('tbody td');
+        bodyCells.forEach((cell) => {
+            const td = cell as HTMLElement;
+            // Wrap content in a container to enforce max height and clipping
+            if (!td.firstElementChild || !(td.firstElementChild as HTMLElement).classList.contains('templater-cell-wrap')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'templater-cell-wrap';
+                wrapper.style.maxHeight = `${MAX_ROW_PX}px`;
+                wrapper.style.overflow = 'hidden';
+                // multi-line clamp where supported
+                (wrapper.style as any).display = '-webkit-box';
+                (wrapper.style as any)['-webkit-line-clamp'] = '3';
+                (wrapper.style as any)['-webkit-box-orient'] = 'vertical';
+                wrapper.style.lineHeight = '1.3';
+                wrapper.style.padding = '0';
+
+                wrapper.innerHTML = td.innerHTML;
+                td.innerHTML = '';
+                td.appendChild(wrapper);
+            }
+        });
+
+        // Ensure icon column visuals fit the maximum row height
+        const iconWrappers = table.querySelectorAll('tbody tr td:nth-child(5) .templater-cell-wrap');
+        iconWrappers.forEach((wrap) => {
+            const w = wrap as HTMLElement;
+            // Use flex to center icon content
+            w.style.display = 'flex';
+            w.style.alignItems = 'center';
+            w.style.justifyContent = 'center';
+            w.style.height = `${MAX_ROW_PX}px`;
+            w.style.maxHeight = `${MAX_ROW_PX}px`;
+            w.style.lineHeight = `${MAX_ROW_PX}px`;
+            // Clear line-clamp behavior for icon cells
+            (w.style as any)['-webkit-line-clamp'] = '';
+            (w.style as any)['-webkit-box-orient'] = '';
+
+            // Scale SVGs to fit height
+            const svg = w.querySelector('svg') as SVGElement | null;
+            if (svg) {
+                (svg as any).style.height = '100%';
+                (svg as any).style.width = 'auto';
+                (svg as any).style.maxHeight = `${MAX_ROW_PX}px`;
+            } else {
+                // Emoji/text icon: set large font-size but within the row height
+                w.style.fontSize = `${Math.floor(MAX_ROW_PX * 0.8)}px`;
+            }
+        });
     }
 
     private openSettings() {
@@ -254,7 +400,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         rules.forEach((rule, index) => {
             const escapedDestinationPath = (rule.destinationPath || "").replace(/"/g, "&quot;");
             const iconForDataAttribute = this.escapeHtml(this.iconSVG[index]);
-    
+
             rulesHTML += `
             <div class="template-rule" data-index="${index}">
                 <!-- Path Pattern and Template -->
@@ -290,6 +436,18 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                         </div>
                     </div>
                 </div>
+                <!-- Hotkey -->
+                <div class="fn__flex" style="margin-top: 8px;">
+                    <div class="fn__flex-1">
+                        <div class="b3-label">${this.i18n.hotkey || "Hotkey"}</div>
+                        <input class="b3-text-field fn__block hotkey-input" placeholder="${this.i18n.hotkeyPlaceholder || "Click and press keys"}" value="${rule.hotkey || ""}" readonly>
+                        <div class="b3-label" style="opacity:0.7;">${this.i18n.hotkeyHint || "Example: Ctrl+Alt+T. Click input then press keys."}</div>
+                    </div>
+                    <div class="fn__space"></div>
+                    <div class="fn__flex-0" style="align-self: end;">
+                        <button class="b3-button b3-button--outline clear-hotkey">${this.i18n.clear || "Clear"}</button>
+                    </div>
+                </div>
                 <!-- Remove Button -->
                 <div class="fn__flex" style="margin-top: 8px;">
                     <div class="fn__flex-1"></div>
@@ -320,6 +478,9 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         });
         const dialogElement = dialog.element;
         const rulesContainer = dialogElement.querySelector(".template-rules-container");
+        if (rulesContainer) {
+            (rulesContainer as HTMLElement).style.overflowX = "auto";
+        }
 
         // Function to handle re-indexing data attributes after a remove operation
         const reindexRuleElements = () => {
@@ -349,7 +510,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         dialogElement.querySelectorAll(".template-rule").forEach(ruleEl => {
             const button = ruleEl.querySelector(".emoji-picker-btn") as HTMLElement;
             const indexStr = (ruleEl as HTMLElement).dataset.index;
-        
+
             if (button && indexStr !== undefined) {
                 const index = parseInt(indexStr, 10);
                 if (index < this.iconSVG.length) {
@@ -360,11 +521,17 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                 button.addEventListener("click", (e) => {
                     this.showEmojiPicker(button);
                 });
-        
+
                 const removeButton = ruleEl.querySelector(".remove-rule") as HTMLElement;
                 if (removeButton) {
                     attachRemoveListener(removeButton);
                 }
+
+                // Attach hotkey capture to existing inputs
+                const hotkeyInput = ruleEl.querySelector(".hotkey-input") as HTMLInputElement;
+                if (hotkeyInput) this.attachHotkeyCapture(hotkeyInput);
+                const clearBtn = ruleEl.querySelector(".clear-hotkey") as HTMLButtonElement;
+                if (clearBtn && hotkeyInput) clearBtn.addEventListener("click", () => { hotkeyInput.value = ""; });
             }
         });
 
@@ -413,6 +580,18 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                         </div>
                     </div>
                 </div>
+                <!-- Hotkey -->
+                <div class="fn__flex" style="margin-top: 8px;">
+                    <div class="fn__flex-1">
+                        <div class="b3-label">${this.i18n.hotkey || "Hotkey"}</div>
+                        <input class="b3-text-field fn__block hotkey-input" placeholder="${this.i18n.hotkeyPlaceholder || "Click and press keys"}" value="" readonly>
+                        <div class="b3-label" style="opacity:0.7;">${this.i18n.hotkeyHint || "Example: Ctrl+Alt+T. Click input then press keys."}</div>
+                    </div>
+                    <div class="fn__space"></div>
+                    <div class="fn__flex-0" style="align-self: end;">
+                        <button class="b3-button b3-button--outline clear-hotkey">${this.i18n.clear || "Clear"}</button>
+                    </div>
+                </div>
                 <!-- Remove Button -->
                 <div class="fn__flex" style="margin-top: 8px;">
                     <div class="fn__flex-1"></div>
@@ -437,6 +616,10 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                 if (newRemoveBtn) {
                     attachRemoveListener(newRemoveBtn);
                 }
+                const newHotkeyInput = newRuleElement.querySelector(".hotkey-input") as HTMLInputElement;
+                if (newHotkeyInput) this.attachHotkeyCapture(newHotkeyInput);
+                const newClearBtn = newRuleElement.querySelector(".clear-hotkey") as HTMLButtonElement;
+                if (newClearBtn && newHotkeyInput) newClearBtn.addEventListener("click", () => { newHotkeyInput.value = ""; });
             }
         });
 
@@ -454,6 +637,7 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                 const templateId = (ruleElement.querySelector(".template-id") as HTMLInputElement).value;
                 const description = (ruleElement.querySelector(".description") as HTMLInputElement).value;
                 const destinationPath = (ruleElement.querySelector(".destination-path") as HTMLInputElement).value;
+                const hotkey = (ruleElement.querySelector(".hotkey-input") as HTMLInputElement)?.value || "";
                 
                 if (pathPattern && templateId && !isNaN(index) && index < this.iconSVG.length) {
                     newRules.push({
@@ -462,13 +646,17 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
                         description: description || undefined,
                         destinationPath: destinationPath || undefined,
                         icon: this.iconSVG[index],
-                        iconUrl: this.iconUrl[index],  
+                        iconUrl: this.iconUrl[index],
+                        hotkey: hotkey || undefined,
                     });
                 }
             });
 
             this.templater.setRules(newRules); // Use the setRules method
             await this.templater.saveRules();
+
+            // Refresh hotkeys map
+            this.registerHotkeys();
 
             const rulesTableContainerElement = document.querySelector(".templater-rules-table");
             if (rulesTableContainerElement) {
@@ -484,6 +672,9 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         cancelBtn.addEventListener("click", () => {
             dialog.destroy();
         });
+
+        // Attach for existing items on open
+        rulesContainer.querySelectorAll('.hotkey-input').forEach((el) => this.attachHotkeyCapture(el as HTMLInputElement));
     }
 
     /**
@@ -951,4 +1142,109 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             });
         }
     }    
+    
+    // --- Hotkey utilities and registration ---
+    private attachHotkeyCapture(input: HTMLInputElement) {
+        const keydownHandler = (e: KeyboardEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const combo = this.eventToHotkey(e);
+            if (combo) {
+                input.value = combo;
+            }
+        };
+        input.addEventListener('keydown', keydownHandler);
+        // To allow clearing via Backspace/Delete when empty, also handle those without modifiers
+        input.addEventListener('keyup', (e) => {
+            if ((e.key === 'Backspace' || e.key === 'Delete') && (input.value === '' || input.value === undefined)) {
+                e.stopPropagation();
+            }
+        });
+    }
+
+    private registerHotkeys() {
+        // Rebuild map
+        this.hotkeyMap.clear();
+        const rules = this.templater.getRules();
+        for (const rule of rules) {
+            if (rule.hotkey && rule.hotkey.trim().length > 0) {
+                this.hotkeyMap.set(this.normalizeHotkey(rule.hotkey), rule);
+            }
+        }
+
+        // Remove existing listener
+        if (this.hotkeyListener) {
+            document.removeEventListener('keydown', this.hotkeyListener, true);
+        }
+
+        // No hotkeys to register
+        if (this.hotkeyMap.size === 0) {
+            this.hotkeyListener = undefined;
+            return;
+        }
+
+        this.hotkeyListener = async (e: KeyboardEvent) => {
+            // Ignore if typing in inputs or contenteditable
+            if (this.isEditableTarget(e.target as Element)) return;
+            const combo = this.eventToHotkey(e);
+            if (!combo) return;
+            const rule = this.hotkeyMap.get(combo);
+            if (!rule) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const notebookId = this.currentNotebookId;
+            if (!notebookId) {
+                showMessage(this.i18n.templateAppliedFailed + ' No active notebook', 4000, 'warning');
+                return;
+            }
+            const ok = await this.templater.createDocFromRule(notebookId, rule);
+            if (ok) {
+                showMessage(this.i18n.templateApplied + `${rule.destinationPath || ''}`, 3000, 'info');
+            } else {
+                showMessage(this.i18n.templateAppliedFailed + `${rule.destinationPath || ''}`, 5000, 'error');
+            }
+        };
+        document.addEventListener('keydown', this.hotkeyListener, true);
+    }
+
+    private normalizeHotkey(hotkey: string): string {
+        const parts = hotkey.split('+').map(s => s.trim().toLowerCase()).filter(Boolean);
+        const mods = new Set<string>();
+        let key = '';
+        for (const p of parts) {
+            if (p === 'ctrl' || p === 'control') mods.add('Ctrl');
+            else if (p === 'alt' || p === 'option') mods.add('Alt');
+            else if (p === 'shift') mods.add('Shift');
+            else if (p === 'meta' || p === 'cmd' || p === 'command' || p === 'super') mods.add('Meta');
+            else key = p.length === 1 ? p.toUpperCase() : p.toUpperCase();
+        }
+        const ordered = ['Ctrl','Alt','Shift','Meta'].filter(m => mods.has(m));
+        return ordered.concat(key ? [key] : []).join('+');
+    }
+
+    private eventToHotkey(e: KeyboardEvent): string | null {
+        const mods: string[] = [];
+        if (e.ctrlKey) mods.push('Ctrl');
+        if (e.altKey) mods.push('Alt');
+        if (e.shiftKey) mods.push('Shift');
+        if (e.metaKey) mods.push('Meta');
+        let key = e.key;
+        if (!key) return null;
+        // Ignore pure modifier presses
+        const lower = key.toLowerCase();
+        if (['control','shift','alt','meta'].includes(lower)) return null;
+        // Normalize
+        if (lower.length === 1) key = lower.toUpperCase();
+        else key = lower.toUpperCase();
+        const combo = mods.concat([key]).join('+');
+        return combo;
+    }
+
+    private isEditableTarget(el: Element | null): boolean {
+        if (!el) return false;
+        const tag = (el as HTMLElement).tagName?.toLowerCase();
+        if (['input','textarea','select'].includes(tag)) return true;
+        const editable = (el as HTMLElement).isContentEditable;
+        return !!editable;
+    }
 }

@@ -100,17 +100,13 @@
             text-align: left;
             padding: 12px 16px;
             font-weight: 500;
-            border-bottom: 1px solid var(--b3-border-color);
+            border: 1px solid var(--b3-border-color);
         }
         
         td {
             padding: 12px 16px;
-            border-bottom: 1px solid var(--b3-border-color);
+            border: 1px solid var(--b3-border-color);
             vertical-align: middle;
-        }
-        
-        tr:last-child td {
-            border-bottom: none;
         }
         
         tr:nth-child(even) {

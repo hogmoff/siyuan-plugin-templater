@@ -1,75 +1,101 @@
-[中文](https://github.com/hogmoff/siyuan-plugin-templater/blob/main/README_zh_CN.md)
+中文文档: https://github.com/hogmoff/siyuan-plugin-templater/blob/main/README_zh_CN.md
+Deutsch: https://github.com/hogmoff/siyuan-plugin-templater/blob/main/README_de_DE.md
 
-# SiYuan plugin templater
+# Templater for SiYuan
 
 ![Preview](preview.png)
 
 ## Overview
-The Plugin manage handling of templates dependend from the created path, set Icons and provide extendend functions
+Rule-based templating for new documents. Match the target path (and notebook) with a regex, insert a template, optionally move/rename the doc, set an icon, and run helper functions. You can also bind a hotkey per rule to create a new templated document instantly.
 
 ## Features
-- Manage rules in Settings
-- Dependend from notebook and the path as regex applies a different template
-- Support any markdown-template in the template folder of the workspace
-- Move file to specific folder (support date format template variables, such as /Meeting/{{now | date "2006/01"}}/{{now | date "2006-01-02"}})
-- Set Icon for Templates with Emoji-Picker
-- Set dynamic icons
-- Functions to set custom attributes
+- Rule-based matching: Apply different templates based on notebook + path (regex).
+- Hotkey per rule: Press a key combo to create a new doc using the rule.
+- Destination path: Create/move docs to a rendered path using Sprig expressions.
+- Icons: Pick an emoji or generate a dynamic SVG icon per rule.
+- Extended functions: Run helper actions like setting custom attributes.
+- Settings UI: Manage rules with a scrollable table and an editor dialog.
 
 ## Installation
-To install the plugin, download it from the Siyuan plugin marketplace or clone the repository and add it to your Siyuan plugins folder.
+Install from the SiYuan Marketplace, or clone and build:
 
-### Clone repository and build
-``` bash
+```bash
 git clone https://github.com/hogmoff/siyuan-plugin-templater.git
 cd siyuan-plugin-templater
 npm install
 npm run build
 ```
 
-## Usage
-To use the plugin, enable it in the Siyuan settings, then add the rules in Settings. After saving the new rules will be shown in a list. 
+## Quick Start
+1) Enable the plugin in SiYuan.
+2) Open Templater Settings → Manage Template Rules.
+3) Add a rule: Path Pattern (regex), Template, optional Destination Path, Icon, Hotkey.
+4) Save. The rules table lists all rules; scroll horizontally to see all columns.
 
-### Template Path
-Set the Template path relative to workspace (e.g. data/templates/example.md)
+## Template Rules
+Each rule has:
+- Path Pattern (regex): Matched against “NotebookName/relative/path/of/parent”. Example: `Work/Meetings/.*`.
+- Template: Path to a template file relative to workspace, e.g. `data/templates/meeting.md`.
+- Description: Free text to document the rule.
+- Destination Path (optional): If set, the new doc is created/moved here. If empty, you’ll be prompted for a name and the doc stays in the current folder.
+- Icon (optional): Emoji or dynamic SVG.
+- Hotkey (optional): A keyboard combo to create a new templated doc at any time.
 
-### Save Path
-Set the Save Path if you need a specific target location for the rendered template. 
-If field is empty then document will be created on current path and ask for document name. Save Path support date format template variables from daily notes. Not existing paths are created.
+Notes
+- Regex is JavaScript RegExp. A rule matches the first time its regex tests true against the composite path: `<NotebookName>/<HPath-of-parent>`. For new docs created at notebook root, the `<HPath>` is empty.
+- If multiple rules define the same hotkey, the last one in the list wins.
 
-#### Examples
-1. > "/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-02"}} creates a new document in folder "/Meeting/20xx/xx/" with name "Meeting 20xx-xx-xx" (today date) in any notebooks
+## Destination Path (Sprig)
+The destination path supports [Sprig](https://masterminds.github.io/sprig/)'s date/time helpers. Non-existing folders are created automatically.
 
-2. > "notebook1/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-02"}}" creates a new document in folder "/Meeting/20xx/xx/" with name "Meeting 20xx-xx-xx" (today's date) in notebook with name "notebook1"
+Examples
+- `/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-02"}}`
+  → creates: `/Meeting/20xx/xx/Meeting 20xx-xx-xx` (in the active notebook)
+- `MyNotebook/Inbox/{{now | date "2006-01"}}` → restricts to notebook “MyNotebook”.
 
-### Extended Functions
-To use the templater functions you have to bring the functions between <%function1 function2 function3 ...%>. The string '<%' must be at beginning of the row and '%>' at the end of the row.
+When Destination Path is empty, you’ll be asked for the document name and it will remain in the current folder.
 
-Available functions:
-1. Custom Attributes
-You can set custom attributes with the ability to use [Sprig-Functions](https://masterminds.github.io/sprig/date.html?utm_source=liuyun.io). 
+## Icons
+Two options:
+- Emoji: Click the icon button to pick an emoji. It’s saved as a codepoint attribute.
+- Dynamic: Switch to “Dynamic Icons”, choose color/lang/date/type/content; the plugin generates and assigns SVG.
 
-#### Examples
-- Set custom attributes for daily notes using the format: <%custom-dailynote-{{now | date "20060102"}}={{now | date "2006-01-02"}}%>
+## Hotkeys
+Add an optional hotkey per rule. Pressing it creates a new document using that rule:
+- Format: combinations like `Ctrl+Alt+T`, `Shift+Meta+N` (Meta = Cmd on macOS).
+- Scope: Targets the currently active notebook (the last focused editor).
+- Safety: Hotkeys are ignored while typing in inputs/contentEditable areas.
+- Conflicts: If the combo is used by SiYuan or your OS, the action may not trigger.
 
-## Available Languages
-- English
-- Chinese (machine translated)
-- German
+## Extended Functions
+Place functions on a single line in your template between markers:
 
-If you want add or edit the Language file, add a pull request in English to the project.
+```
+<% function1 function2 %>
+```
 
-## Issues
-If you find an issue, add an issue only in English in the project under [Github issue](https://github.com/hogmoff/siyuan-plugin-templater/issues)
+Available
+- Custom attributes: define block attributes using Sprig, for example:
+```
+<% custom-dailynote-{{now | date "20060102"}}={{now | date "2006-01-02"}} %>
+```
 
-## Limitations
-- Tested only in Desktop and Web Version.
-- Compatibility may vary depending on the Siyuan version.
+## Settings UI
+- Manage Template Rules opens a dialog to add/edit rules. It includes:
+  - Path Pattern, Template, Description, Destination Path, Icon, Hotkey.
+  - An emoji picker and a dynamic icon generator.
+  - Click the Hotkey field and press keys to set; Clear to remove.
+- The rules table lists all rules with a horizontal scrollbar. Cells align left and show a full grid.
 
-## Image
-[Icon from Freepik](https://de.freepik.com/icon/wegweiser_3501183#fromView=family&page=1&position=51&uuid=446d41f8-5f18-4105-a681-b4447b91efe7)
+## Troubleshooting
+- Template not applied: check Path Pattern regex and Template path.
+- Destination Path not created: verify Sprig output and notebook name (if specified).
+- Icon not updated: ensure the dynamic icon URL is generated; try again.
+- Hotkey not firing: avoid OS/SiYuan-reserved combos; ensure an editor is active.
 
+## Languages
+- English, Chinese, German (translations welcome via PR).
 
-## Link to external resources
-Special Thanks to the contributors and maintainers of related open-source projects:
-- https://github.com/SilentVoid13/Templater
+## License & Credits
+- Icon from Freepik: https://de.freepik.com/icon/wegweiser_3501183
+- Inspired by: https://github.com/SilentVoid13/Templater

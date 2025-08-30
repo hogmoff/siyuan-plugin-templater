@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.7.0 2025-08-30
+- Add Hotkey for the rules
+- Setting Table better column width for more content
+- Add German README.MD
+
 ## v0.6.0 2025-07-28
 - Add Notebook support for regex-based template application
 - Limit modal height to improve usability

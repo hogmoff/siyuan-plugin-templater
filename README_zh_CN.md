@@ -1,74 +1,101 @@
-[English](https://github.com/hogmoff/siyuan-plugin-templater/blob/main/README.md)
+英文文档: https://github.com/hogmoff/siyuan-plugin-templater/blob/main/README.md
+德文文档: https://github.com/hogmoff/siyuan-plugin-templater/blob/main/README_de_DE.md
 
-# 思源插件模板
+# 思源 Templater 插件
 
 ![Preview](preview.png)
 
 ## 概述
-該插件管理模板的處理，根據創建的路徑設置圖標並提供擴展功能。
+根据“笔记本+路径”规则自动套用模板，可选择目标路径、设置图标、执行扩展函数。也可为每条规则设置快捷键，按下即可立即创建一篇套用模板的新文档。
 
 ## 功能
-- 在設置中管理規則
-- 根據筆記本和路徑作為正則表達式應用不同的模板
-- 支持工作區模板文件夾中的任何Markdown模板
-- 將文件移動到特定文件夾（支持日期格式模板變量，例如 /Meeting/{{now   date "2006/01"}}/{{now | date "2006-01-02"}}）
-- 用表情符號選擇器為模板設置圖標
-- 設置動態圖標
-- 設置自定義屬性的功能
+- 规则匹配：基于 笔记本名+路径（正则）匹配不同模板。
+- 规则快捷键：为规则绑定组合键，一键创建并套用模板。
+- 目标路径：使用 Sprig 表达式渲染，自动创建缺失的文件夹。
+- 图标：支持表情符号或动态 SVG 图标。
+- 扩展函数：如设置自定义属性等。
+- 设置界面：带横向滚动的规则表格与编辑弹窗。
 
-## 安裝
-要安裝該插件，請從SiYuan插件市場下載，或克隆存儲庫並將其添加到您的SiYuan插件文件夾中。
+## 安装
+从思源插件市场安装，或克隆仓库自行构建：
 
-### 克隆存儲庫並構建
 ```bash
 git clone https://github.com/hogmoff/siyuan-plugin-templater.git
 cd siyuan-plugin-templater
 npm install
-npm run builduild
+npm run build
 ```
 
-## 使用方法
-要使用該插件，請在思源設定中啟用它，然後在「設定」中新增規則。儲存後，新規則將顯示在清單中。
+## 快速上手
+1) 启用插件。
+2) 打开 Templater 设置 → 管理模板规则。
+3) 新增规则：填写 路径正则、模板、可选的保存路径、图标、快捷键。
+4) 保存。表格可横向滚动，显示所有列。
 
-### 範本路徑
-設定相對於工作區的範本路徑（例如 data/templates/example.md）。
+## 模板规则
+每条规则包含：
+- 路径正则：匹配对象为 “笔记本名称/父级人类可读路径”。示例：`Work/Meetings/.*`。
+- 模板：相对工作区的模板路径，如 `data/templates/meeting.md`。
+- 描述：规则说明。
+- 保存路径（可选）：若设置则在此处创建/移动；为空时在当前目录创建并询问文件名。
+- 图标（可选）：表情或动态 SVG。
+- 快捷键（可选）：按下后立即按此规则新建文档。
 
-### 儲存路徑
-如果您需要為渲染後的範本指定目標位置，請設定「儲存路徑」。
-如果欄位為空，則將在目前路徑上建立文件並詢問文件名稱。 「儲存路徑」支援每日筆記中的日期格式範本變數。不存在的路徑將不會被創建。
+说明
+- 正则语法为 JavaScript RegExp。用于匹配 `<NotebookName>/<父级人类可读路径>`。
+- 多条规则使用相同快捷键时，以列表中最后一条生效。
 
-#### 範例
-1. > "/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-02"}} 會在資料夾「/Meeting/20xx/xx/」中的任何筆記本中建立一個名為「Meeting 20xx-xx-xx」（今天日期）的新文件。
+## 保存路径（Sprig）
+支持 [Sprig](https://masterminds.github.io/sprig/) 的日期/时间函数。缺失的目录会自动创建。
 
-2. > "notebook1/Meeting/{{now | date "2006/01"}}日期“2006/01”}}/會議{{現在| date "2006-01-02"}}" 會在資料夾 "/Meeting/20xx//"" 中建立一個名稱為新的"notebook1"。
+示例
+- `/Meeting/{{now | date "2006/01"}}/Meeting {{now | date "2006-01-02"}}`
+  → 生成：`/Meeting/20xx/xx/Meeting 20xx-xx-xx`（在当前激活的笔记本中）
+- `MyNotebook/Inbox/{{now | date "2006-01"}}` → 仅匹配名为 “MyNotebook” 的笔记本。
 
-### 擴充函數
-若要使用模板函數，您必須將函數放在 <%function1 function2 function3 ...%> 之間。字串“<%”必須位於行首，“%>”必須位於行尾。
+保存路径为空时，将提示输入文档名，并保留在当前目录。
 
-可用函數：
-1. 自訂屬性
-您可以使用 [Sprig-Functions](https://masterminds.github.io/sprig/date.html?utm_source=liuyun.io) 設定自訂屬性。
+## 图标
+两种方式：
+- 表情：点击图标按钮选择表情，将以代码点形式保存。
+- 动态：切换到 “动态图标” 选项卡，选择颜色/语言/日期/类型/内容，插件会生成并设置 SVG。
 
-#### 範例
-- 使用以下格式為每日筆記設定自訂屬性：<%custom-dailynote-{{now | date "20060102"}}={{now | date "2006-01-02"}}%>
+## 快捷键
+每条规则可设置快捷键。按下后立即按该规则创建新文档：
+- 写法：如 `Ctrl+Alt+T`、`Shift+Meta+N`（Meta=macOS 上的 Cmd）。
+- 作用域：针对当前激活的笔记本（最近一次聚焦的编辑器）。
+- 安全：在输入框或可编辑区域输入时不会触发。
+- 冲突：若与系统或思源快捷键冲突，可能无法触发，请更换组合键。
 
-## 可用語言
-- 英語
-- 中文（機器翻譯）
-- 德語
+## 扩展函数
+在模板中以单独一行写入：
 
-如果您需要新增或編輯語言文件，請在項目中新增英文版拉取請求。
+```
+<% function1 function2 %>
+```
 
-## 問題
-如果您發現問題，請在專案中的 [Github 問題](https://github.com/hogmoff/siyuan-plugin-templater/issues) 下僅新增英文版問題。
+目前支持：
+- 自定义属性：可结合 Sprig，示例：
+```
+<% custom-dailynote-{{now | date "20060102"}}={{now | date "2006-01-02"}} %>
+```
 
-## 限制
-- 僅在桌面版和網頁版中測試。
-- 相容性可能因 Siyuan 版本而異。
+## 设置界面
+- “管理模板规则” 弹窗用于新增/编辑规则，包含：
+  - 路径正则、模板、描述、保存路径、图标、快捷键。
+  - 表情选择器与动态图标生成器。
+  - 点击快捷键输入框后按下组合键；点击 Clear 清除。
+- 规则表格带横向滚动，左对齐并显示完整网格线。
 
-## 圖片
-[圖示來自 Freepik](https://de.freepik.com/icon/wegweiser_3501183#fromView=family&page=1&position=51&uuid=446d41f8-5f18-4105-a681-b4447b91efe7)
+## 排错
+- 模板未生效：检查路径正则与模板路径是否正确。
+- 保存路径无效：检查 Sprig 输出与笔记本名称（若指定）。
+- 图标未更新：确认动态图标 URL 已生成后再试。
+- 快捷键无响应：避免系统/思源保留组合；确保有编辑器处于激活状态。
 
-## 外部資源鏈接
-特別感謝致相關開源專案的貢獻者與維護者：
-- https://github.com/SilentVoid13/Templater
+## 语言
+- 英文、中文、德文（欢迎通过 PR 改进翻译）。
+
+## 许可与致谢
+- 图标来源 Freepik: https://de.freepik.com/icon/wegweiser_3501183
+- 借鉴项目： https://github.com/SilentVoid13/Templater

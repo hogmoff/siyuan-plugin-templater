@@ -24,6 +24,7 @@ export interface TemplateRule {
     destinationPath?: string; // Optional path to move the document after applying template
     icon?: string; // Optional emoji icon for the document
     iconUrl?: string; // Optional URL for the icon
+    hotkey?: string; // Optional hotkey to trigger template copy
 }
 
 // Standardvalue for icon
@@ -327,4 +328,85 @@ export class Templater {
         }
     }
 
+    /**
+     * Create a new document based on a rule and apply its template directly.
+     * Used for hotkey-triggered creation.
+     */
+    async createDocFromRule(notebookId: string, rule: TemplateRule): Promise<boolean> {
+        try {
+            if (!rule || !rule.templateId) return false;
+
+            // Determine name and path
+            let newName: string;
+            let newPath = "";
+
+            if (!rule.destinationPath || rule.destinationPath.length === 0) {
+                newName = await this.promptForDocumentName();
+                if (!newName) return false;
+            } else {
+                const sprigPath = await renderSprig(rule.destinationPath);
+                if (!sprigPath) return false;
+                if (sprigPath.includes("/")) {
+                    const parts = sprigPath.split("/");
+                    newName = parts[parts.length - 1];
+                    newPath = parts.slice(0, -1).join("/");
+                } else {
+                    newName = sprigPath;
+                    newPath = "";
+                }
+            }
+
+            // Create the document at target path
+            const fullPath = newPath && newPath.length > 0 ? `${newPath}/${newName}` : newName;
+            const newDocId = await createDocWithMd(notebookId, fullPath, "");
+            if (!newDocId) {
+                console.error("Failed to create document for hotkey rule");
+                return false;
+            }
+
+            // Get first block to insert content after
+            const firstBlocks = await getChildBlocks(newDocId);
+            if (!firstBlocks || !firstBlocks.data) {
+                console.error("Failed to get blocks for new doc:", firstBlocks);
+                return false;
+            }
+
+            // Render the template
+            const absPath = (await getWorkspaceDir()) + "/" + rule.templateId;
+            const renderResponse = await renderTemplate(newDocId, absPath);
+            if (!renderResponse || !renderResponse.content) {
+                console.error("Failed to render template for hotkey rule:", renderResponse);
+                return false;
+            }
+
+            // Insert rendered content and remove initial empty block
+            const insertResponse = await insertBlock("", firstBlocks.data[0].id, "", renderResponse.content);
+            if (!insertResponse || insertResponse.code !== 0) {
+                console.error("Failed to insert rendered content for hotkey rule:", insertResponse);
+                return false;
+            }
+
+            const deleteResponse = await deleteBlock(firstBlocks.data[0].id);
+            if (!deleteResponse || deleteResponse.code !== 0) {
+                console.error("Failed to delete initial block for hotkey rule:", deleteResponse);
+                return false;
+            }
+
+            // Set icon if provided
+            if (rule.icon && rule.icon.length > 0) {
+                const iconResponse = await setIcon(newDocId, rule.icon, rule.iconUrl || "");
+                if (!iconResponse || iconResponse.code !== 0) {
+                    console.error("Failed to set icon on new doc:", iconResponse);
+                }
+            }
+
+            // Apply extended templater functions
+            await applyTemplaterFunctions(newDocId);
+
+            return true;
+        } catch (error) {
+            console.error("Failed to create document from rule:", error);
+            return false;
+        }
+    }
 }
