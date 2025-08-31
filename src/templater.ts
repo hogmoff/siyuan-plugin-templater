@@ -13,7 +13,8 @@ import {
     getChildBlocks, 
     insertBlock,
     deleteBlock,
-    renderSprig
+    renderSprig,
+    getNotebookIdByName
 } from "./api";
 import { applyTemplaterFunctions } from "./extendedFunctions";
 
@@ -330,38 +331,97 @@ export class Templater {
 
     /**
      * Create a new document based on a rule and apply its template directly.
-     * Used for hotkey-triggered creation.
      */
-    async createDocFromRule(notebookId: string, rule: TemplateRule): Promise<boolean> {
+    async createDocFromRule(notebookId: string, rule: TemplateRule, docId: string): Promise<boolean> {
         try {
             if (!rule || !rule.templateId) return false;
 
             // Determine name and path
             let newName: string;
             let newPath = "";
+            let targetNotebookId = notebookId;
+            console.log("Creating document in notebook:", targetNotebookId, rule);
 
             if (!rule.destinationPath || rule.destinationPath.length === 0) {
                 newName = await this.promptForDocumentName();
                 if (!newName) return false;
             } else {
                 const sprigPath = await renderSprig(rule.destinationPath);
+                console.log("Rendered Sprig path:", sprigPath);
                 if (!sprigPath) return false;
-                if (sprigPath.includes("/")) {
-                    const parts = sprigPath.split("/");
-                    newName = parts[parts.length - 1];
-                    newPath = parts.slice(0, -1).join("/");
+                // Rule: if path starts with '/' use current notebookId
+                // Else, text up to next '/' is a notebook name; resolve its notebookId
+                if (sprigPath.startsWith("/")) {
+                    const trimmed = sprigPath.replace(/^\/+/, "");
+                    if (trimmed.includes("/")) {
+                        const parts = trimmed.split("/");
+                        newName = parts[parts.length - 1];
+                        newPath = parts.slice(0, -1).join("/");
+                    } else {
+                        newName = trimmed;
+                        newPath = "";
+                    }
                 } else {
-                    newName = sprigPath;
-                    newPath = "";
+                    const firstSlash = sprigPath.indexOf("/");
+                    if (firstSlash === -1) {
+                        console.error("Destination path must include notebook name and '/' when not starting with '/'.");
+                        return false;
+                    }
+                    const notebookName = sprigPath.substring(0, firstSlash);
+                    const rest = sprigPath.substring(firstSlash + 1);
+                    const resolvedId = await getNotebookIdByName(notebookName);
+                    if (!resolvedId) {
+                        console.error(`Notebook not found by name: ${notebookName}`);
+                        return false;
+                    }
+                    console.log(`Resolved notebook name '${notebookName}' to ID: ${resolvedId}`);
+                    targetNotebookId = resolvedId;
+                    if (rest.includes("/")) {
+                        const parts = rest.split("/");
+                        newName = parts[parts.length - 1];
+                        newPath = parts.slice(0, -1).join("/");
+                    } else {
+                        newName = rest;
+                        newPath = "";
+                    }
                 }
             }
 
-            // Create the document at target path
+            let newDocId = docId;
             const fullPath = newPath && newPath.length > 0 ? `${newPath}/${newName}` : newName;
-            const newDocId = await createDocWithMd(notebookId, fullPath, "");
-            if (!newDocId) {
-                console.error("Failed to create document for hotkey rule");
-                return false;
+            if (docId && docId.length > 0) {
+                // Rename the document
+                const responseRename = await renameDocbyId(docId, newName);
+                if (!responseRename) {
+                    console.error("Failed to rename document:", docId);
+                    return false;
+                }
+                let pathId = null;
+                if (newPath.length > 0) {    
+                    // Create Folder if not exist
+                    pathId = await getIDsByHPath(targetNotebookId, newPath);
+                    if (!pathId || pathId.length === 0) {
+                        pathId = await createDocWithMd(targetNotebookId, newPath, "");
+                    }    
+                }
+                else {
+                    pathId = targetNotebookId;
+                }
+            
+                // Move document to destination path if specified            
+                const moveResponse = await moveDocbyId(docId, fullPath, targetNotebookId, pathId);
+                if (!moveResponse || moveResponse.code !== 0) {
+                    console.error("Failed to move document to destination path:", moveResponse);
+                }
+                
+            }   
+            else {
+                // Create the document at target path
+                newDocId = await createDocWithMd(targetNotebookId, fullPath, "");
+                if (!newDocId) {
+                    console.error("Failed to create document for hotkey rule");
+                    return false;
+                }
             }
 
             // Get first block to insert content after

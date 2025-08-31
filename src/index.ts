@@ -6,7 +6,7 @@ import {
 } from "siyuan";
 import "./index.scss";
 import { Templater, TemplateRule, getDocumentPathById, DEFAULT_ICON } from "./templater";
-import { getDynamicIconUrl, getDynamicIcon, getNotebookNameById } from "./api";
+import { getDynamicIconUrl, getDynamicIcon, getNotebookNameById, getChildBlocks } from "./api";
 
 export default class TemplaterPlugin extends Plugin {
     private templater: Templater;
@@ -112,13 +112,24 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         }
 
         // Check if it's a new document by examining the action array
-        const isNew = detail.isNew || (
+        let isNew = detail.isNew || (
             detail.protyle &&
             detail.protyle.options &&
             detail.protyle.options.action &&
             Array.isArray(detail.protyle.options.action) &&
             detail.protyle.options.action.includes("cb-get-opennew")
         );
+        // Fallback: treat as new if the doc appears empty (single initial block)
+        if (!isNew) {
+            try {
+                const blocks = await getChildBlocks(docId);
+                if (blocks && Array.isArray(blocks.data) && blocks.data.length === 1) {
+                    isNew = true;
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
 
         if (isNew) {
             const docPath = detail.protyle.path;
@@ -134,22 +145,26 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             // Combine notebook name and document path for matching.
             // HdocPath is either empty (for root docs) or starts with a "/".
             const fullPathForMatching = `${notebookName}${HdocPath}`;
+            console.log("Templater: new doc detected:", { fullPathForMatching, docId, notebookId, docPath });
 
             // Find matching template
             const matchedRule = this.templater.findTemplateForPath(fullPathForMatching);
+            console.log("Matched rule:", matchedRule);
 
             if (matchedRule) {
                 // Add to processed list first to prevent double processing
                 this.processedDocuments.add(docId);
 
+                const success = await this.templater.createDocFromRule(this.currentNotebookId, matchedRule, docId);
+
                 // Apply the template with destination path and icon if specified
-                const success = await this.templater.applyTemplate(
-                    docId,
-                    matchedRule.templateId,
-                    matchedRule.destinationPath,
-                    matchedRule.icon,
-                    matchedRule.iconUrl
-                );
+                // const success = await this.templater.applyTemplate(
+                //     docId,
+                //     matchedRule.templateId,
+                //     matchedRule.destinationPath,
+                //     matchedRule.icon,
+                //     matchedRule.iconUrl
+                // );
 
                 if (success) {
                     showMessage(this.i18n.templateApplied + `${docPath}`, 3000, "info");
@@ -1184,20 +1199,21 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
         }
 
         this.hotkeyListener = async (e: KeyboardEvent) => {
-            // Ignore if typing in inputs or contenteditable
-            if (this.isEditableTarget(e.target as Element)) return;
             const combo = this.eventToHotkey(e);
             if (!combo) return;
+            // Allow hotkeys even in editor if a real modifier is pressed (Ctrl/Alt/Meta)
+            const hasSystemModifier = e.ctrlKey || e.altKey || e.metaKey;
+            if (this.isEditableTarget(e.target as Element) && !hasSystemModifier) return;
             const rule = this.hotkeyMap.get(combo);
             if (!rule) return;
             e.preventDefault();
             e.stopPropagation();
             const notebookId = this.currentNotebookId;
             if (!notebookId) {
-                showMessage(this.i18n.templateAppliedFailed + ' No active notebook', 4000, 'warning');
+                showMessage(this.i18n.templateAppliedFailed + ' No active notebook', 4000, 'error');
                 return;
             }
-            const ok = await this.templater.createDocFromRule(notebookId, rule);
+            const ok = await this.templater.createDocFromRule(notebookId, rule, null);
             if (ok) {
                 showMessage(this.i18n.templateApplied + `${rule.destinationPath || ''}`, 3000, 'info');
             } else {

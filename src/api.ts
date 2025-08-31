@@ -52,6 +52,27 @@ export async function getNotebookNameById(notebookId: string): Promise<string | 
     }
 }
 
+/**
+ * Gets the notebook ID for a given notebook name.
+ * @param notebookName The human-readable name of the notebook.
+ * @returns The id of the notebook, or null if not found.
+ */
+export async function getNotebookIdByName(notebookName: string): Promise<string | null> {
+    const url = "/api/notebook/lsNotebooks";
+    try {
+        const response = await fetchSyncPost(url, {});
+        if (response && response.data && Array.isArray(response.data.notebooks)) {
+            const notebook = response.data.notebooks.find((nb: { id: string; name: string; }) => nb.name === notebookName);
+            return notebook ? notebook.id : null;
+        }
+        console.error("Could not list notebooks or invalid response format.");
+        return null;
+    } catch (error_msg) {
+        console.error("Error fetching notebook list:", error_msg);
+        return null;
+    }
+}
+
 export async function getFile(path: string): Promise<any> {
     const data = {
         path: path,
