@@ -224,112 +224,6 @@ export class Templater {
     }
 
     /**
-     * Apply a template to a document
-     */
-    async applyTemplate(docId: string, templateId: string, destinationPath: string, icon?: string, iconUrl?: string): Promise<boolean> {
-        try {
-            let newName;
-            let newPath;
-    
-            if (! destinationPath || destinationPath.length == 0){
-                // Prompt for the document name
-                newName = await this.promptForDocumentName();
-                newPath = "";
-                if (!newName) {
-                    // User cancelled the operation
-                    return false;
-                }
-            }
-            else {
-                // Render SprigPath    
-                const sprigPath = await renderSprig(destinationPath);    
-                if (!sprigPath) return false;
-    
-                if (sprigPath.includes("/")) {
-                    const sprigPathParts = sprigPath.split("/");
-                    newName = sprigPathParts[sprigPathParts.length - 1];
-                    newPath = sprigPathParts.slice(0, -1).join("/");
-                }
-                else {
-                    newName = sprigPath;
-                    newPath = "";
-                }
-            } 
-            
-            // Rename the document
-            const responseRename = await renameDocbyId(docId, newName);
-            if (!responseRename) {
-                console.error("Failed to rename document:", docId);
-                return false;
-            }    
-            
-            // Get first BlockId
-            const firstBlocks = await getChildBlocks(docId);
-            if (!firstBlocks || !firstBlocks.data) {
-                console.error("Failed to get blocks:", firstBlocks);
-                return false;
-            }
-            
-            // First, render the template to get its content
-            const absPath = await getWorkspaceDir() + "/" + templateId;
-            const renderResponse = await renderTemplate(docId, absPath);    
-            if (!renderResponse || !renderResponse.content) {
-                console.error("Failed to render template:", renderResponse);
-                return false;
-            }
-            
-            // Now insert the rendered content into the document before first block
-            const insertResponse = await insertBlock("", firstBlocks.data[0].id, "", renderResponse.content);    
-            if (!insertResponse || insertResponse.code !== 0) {
-                console.error("Failed to insert block: ", insertResponse);
-                return false;
-            }
-            
-            // delete first block (empty)
-            const deleteResponse = await deleteBlock(firstBlocks.data[0].id);
-            if (!deleteResponse || deleteResponse.code !== 0) {
-                console.error("Failed to delete block: ", deleteResponse);
-                return false;
-            }
-    
-            // NotebookID
-            await new Promise(resolve => setTimeout(resolve, 200));
-            const notebookId = await getNotebookIdByDocId(docId);
-    
-            if (newPath.length > 0) {    
-                // Create Folder if not exist
-                const ids = await getIDsByHPath(notebookId, newPath);
-                let newPathDocId = null;
-                if (!ids || ids.length === 0) {
-                    newPathDocId = await createDocWithMd(notebookId, newPath, "");
-                }    
-        
-                // Move document to destination path if specified            
-                const moveResponse = await moveDocbyId(docId, newPath, notebookId, newPathDocId);
-                if (!moveResponse || moveResponse.code !== 0) {
-                    console.error("Failed to move document to destination path:", moveResponse);
-                }
-            }
-    
-            // Set Icon if provided
-            if (icon && icon.length > 0) {
-                const iconResponse = await setIcon(docId, icon, iconUrl);
-                if (!iconResponse || iconResponse.code !== 0) {
-                    console.error("Failed to set document icon:", iconResponse);
-                }
-            }
-
-            // Apply Templater Functions
-            await applyTemplaterFunctions(docId);
-            
-            return true;
-        } catch (error) {
-            console.error("Failed to apply template:", error);
-            return false;
-        }
-    }
-
-    /**
      * Create a new document based on a rule and apply its template directly.
      */
     async createDocFromRule(notebookId: string, rule: TemplateRule, docId: string): Promise<boolean> {
@@ -340,14 +234,12 @@ export class Templater {
             let newName: string;
             let newPath = "";
             let targetNotebookId = notebookId;
-            console.log("Creating document in notebook:", targetNotebookId, rule);
 
             if (!rule.destinationPath || rule.destinationPath.length === 0) {
                 newName = await this.promptForDocumentName();
                 if (!newName) return false;
             } else {
                 const sprigPath = await renderSprig(rule.destinationPath);
-                console.log("Rendered Sprig path:", sprigPath);
                 if (!sprigPath) return false;
                 // Rule: if path starts with '/' use current notebookId
                 // Else, text up to next '/' is a notebook name; resolve its notebookId
@@ -374,7 +266,6 @@ export class Templater {
                         console.error(`Notebook not found by name: ${notebookName}`);
                         return false;
                     }
-                    console.log(`Resolved notebook name '${notebookName}' to ID: ${resolvedId}`);
                     targetNotebookId = resolvedId;
                     if (rest.includes("/")) {
                         const parts = rest.split("/");

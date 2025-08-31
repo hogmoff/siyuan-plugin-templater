@@ -145,26 +145,15 @@ l4 -57 -76 0 -76 0 0 52 c0 39 5 57 22 75 26 28 67 30 98 5z"/>
             // Combine notebook name and document path for matching.
             // HdocPath is either empty (for root docs) or starts with a "/".
             const fullPathForMatching = `${notebookName}${HdocPath}`;
-            console.log("Templater: new doc detected:", { fullPathForMatching, docId, notebookId, docPath });
 
             // Find matching template
             const matchedRule = this.templater.findTemplateForPath(fullPathForMatching);
-            console.log("Matched rule:", matchedRule);
 
             if (matchedRule) {
                 // Add to processed list first to prevent double processing
                 this.processedDocuments.add(docId);
 
                 const success = await this.templater.createDocFromRule(this.currentNotebookId, matchedRule, docId);
-
-                // Apply the template with destination path and icon if specified
-                // const success = await this.templater.applyTemplate(
-                //     docId,
-                //     matchedRule.templateId,
-                //     matchedRule.destinationPath,
-                //     matchedRule.icon,
-                //     matchedRule.iconUrl
-                // );
 
                 if (success) {
                     showMessage(this.i18n.templateApplied + `${docPath}`, 3000, "info");
