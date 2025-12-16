@@ -278,6 +278,11 @@ export class Templater {
                 }
             }
 
+            // Ensure newPath starts with /
+            if (newPath.length > 0 && !newPath.startsWith("/")) {
+                newPath = `/${newPath}`;
+            }
+
             let newDocId = docId;
             const fullPath = newPath && newPath.length > 0 ? `${newPath}/${newName}` : newName;
             if (docId && docId.length > 0) {
@@ -288,12 +293,13 @@ export class Templater {
                     return false;
                 }
                 let pathId = null;
-                if (newPath.length > 0) {    
-                    // Create Folder if not exist
-                    pathId = await getIDsByHPath(targetNotebookId, newPath);
-                    if (!pathId || pathId.length === 0) {
+                if (newPath.length > 0) {
+                    const pathIds = await getIDsByHPath(targetNotebookId, newPath);
+                    if (pathIds && pathIds.length > 0) {
+                        pathId = pathIds[0];
+                    } else {
                         pathId = await createDocWithMd(targetNotebookId, newPath, "");
-                    }    
+                    }
                 }
                 else {
                     pathId = targetNotebookId;

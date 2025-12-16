@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.1 2025-12-16
+- Bugfix new path generation
+
 ## v0.7.0 2025-08-30
 - Add Hotkey for the rules
 - Setting Table better column width for more content
