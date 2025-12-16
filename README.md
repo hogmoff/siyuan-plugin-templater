@@ -34,14 +34,18 @@ npm run build
 
 ## Template Rules
 Each rule has:
-- Path Pattern (regex): Matched against “NotebookName/relative/path/of/parent”. Example: `Work/Meetings/.*`.
-- Template: Path to a template file relative to workspace, e.g. `data/templates/meeting.md`.
-- Description: Free text to document the rule.
+- Path Pattern (regex) *: Matched against “NotebookName/relative/path/of/parent”.
+  - Important: To match documents INSIDE a folder, use `.*` directly after the folder name (without a trailing slash).
+  - ✅ Correct: `Workspace/Manager.*` matches documents created in `/Workspace/Manager/`
+  - ❌ Wrong: `Workspace/Manager/.*` won't match (extra slash breaks the pattern)
+- Template *: Full path to template file including `.md` extension, relative to workspace root. Example: `data/templates/meeting.md`.
+- Description *: Free text to document the rule.
 - Destination Path (optional): If set, the new doc is created/moved here. If empty, you’ll be prompted for a name and the doc stays in the current folder.
 - Icon (optional): Emoji or dynamic SVG.
 - Hotkey (optional): A keyboard combo to create a new templated doc at any time.
 
 Notes
+- Fields marked with * are required.
 - Regex is JavaScript RegExp. A rule matches the first time its regex tests true against the composite path: `<NotebookName>/<HPath-of-parent>`. For new docs created at notebook root, the `<HPath>` is empty.
 - If multiple rules define the same hotkey, the last one in the list wins.
 

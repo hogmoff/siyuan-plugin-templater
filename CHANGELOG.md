@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.3 2025-12-16
+- improved documentation
+
 ## v0.7.2 2025-12-16
 - Bugfix new path generation
 

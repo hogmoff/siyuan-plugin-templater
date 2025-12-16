@@ -2,7 +2,7 @@
   "name": "siyuan-plugin-templater",
   "author": "hogmoff",
   "url": "https://github.com/hogmoff/siyuan-plugin-templater",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "minAppVersion": "3.2.1",
   "backends": [
     "windows",
@@ -32,6 +32,7 @@
   },
   "readme": {
     "default": "README.md",
+    "de_DE": "README_de_DE.md",
     "zh_CN": "README_zh_CN.md"
   },
   "funding": {

@@ -34,14 +34,18 @@ npm run build
 
 ## Vorlagenregeln
 Eine Regel enthält:
-- Pfad‑Regex: Abgleich gegen „NotebookName/relativer/Elternpfad“. Beispiel: `Work/Meetings/.*`.
-- Vorlage: Pfad zur Vorlagendatei relativ zum Workspace, z. B. `data/templates/meeting.md`.
-- Beschreibung: Freitext zur Regel.
+- Pfad‑Regex *: Abgleich gegen „NotebookName/relativer/Elternpfad“.
+  - Wichtig: Um Dokumente INNERHALB eines Ordners zu matchen, nutze `.*` direkt nach dem Ordnernamen (ohne abschließenden Slash).
+  - ✅ Richtig: `Workspace/Manager.*` matcht Dokumente in `/Workspace/Manager/`
+  - ❌ Falsch: `Workspace/Manager/.*` matcht nicht (extra Slash bricht das Pattern)
+- Vorlage *: Voller Pfad zur Vorlagendatei inklusive `.md` Endung, relativ zum Workspace-Root. Beispiel: `data/templates/meeting.md`.
+- Beschreibung *: Freitext zur Regel.
 - Speicherpfad (optional): Wenn gesetzt, wird das neue Dokument hier erstellt/verschoben. Wenn leer, wirst du nach dem Namen gefragt und das Dokument bleibt im aktuellen Verzeichnis.
 - Icon (optional): Emoji oder dynamisches SVG.
 - Hotkey (optional): Tastenkombination zum sofortigen Erstellen eines neuen Dokuments nach dieser Regel.
 
 Hinweise
+- Mit * markierte Felder sind Pflichtfelder.
 - Regex entspricht JavaScript RegExp. Der Abgleich erfolgt gegen den zusammengesetzten Pfad `<NotebookName>/<menschlicher Elternpfad>`.
 - Verwenden mehrere Regeln dieselbe Tastenkombination, gilt die zuletzt gelistete.
 
@@ -99,4 +103,3 @@ Derzeit verfügbar
 ## Lizenz & Danksagungen
 - Icon von Freepik: https://de.freepik.com/icon/wegweiser_3501183
 - Inspiriert von: https://github.com/SilentVoid13/Templater
-
