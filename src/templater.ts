@@ -278,6 +278,11 @@ export class Templater {
                 }
             }
 
+            // Ensure newPath starts with /
+            if (newPath.length > 0 && !newPath.startsWith("/")) {
+                newPath = `/${newPath}`;
+            }
+
             let newDocId = docId;
             const fullPath = newPath && newPath.length > 0 ? `${newPath}/${newName}` : newName;
             if (docId && docId.length > 0) {
